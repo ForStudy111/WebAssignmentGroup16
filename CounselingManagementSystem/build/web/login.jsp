@@ -24,15 +24,8 @@
                 max-width: 350px;
                 text-align: center;
             }
-            h2 {
-                color: #2d3748;
-                margin-bottom: 8px;
-            }
-            p {
-                color: #718096;
-                font-size: 14px;
-                margin-bottom: 24px;
-            }
+            h2 { color: #2d3748; margin-bottom: 8px; }
+            p { color: #718096; font-size: 14px; margin-bottom: 24px; }
             input {
                 width: 100%;
                 padding: 12px;
@@ -66,6 +59,11 @@
                 color: #e53e3e;
                 font-size: 13px;
                 margin-top: 12px;
+                font-weight: 600;
+                background: #fff5f5;
+                padding: 10px;
+                border-radius: 6px;
+                border: 1px solid #fed7d7;
             }
         </style>
     </head>
@@ -78,9 +76,14 @@
                 <input type="password" name="password" placeholder="Password" required>
                 <button type="submit">Sign In</button>
             </form>
-            <% if (request.getParameter("error") != null) { %>
-                <div class="error">Invalid username or password.</div>
-            <% }%>
+            
+            <%-- Dynamic Debugging Block --%>
+            <% if (request.getParameter("error") != null) { 
+                String errMsg = request.getParameter("msg");
+                if (errMsg == null) errMsg = "Invalid username or password.";
+            %>
+                <div class="error">❌ <%= errMsg %></div>
+            <% } %>
         </div>
     </body>
 </html>
