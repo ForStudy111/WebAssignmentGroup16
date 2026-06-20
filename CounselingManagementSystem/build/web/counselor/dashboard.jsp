@@ -86,8 +86,9 @@
         <div class="sidebar">
             <h2>COUNSELOR HUB</h2>
             <a href="manage.jsp" class="nav-item">📅 Manage Appointments</a>
-            <a href="#" class="nav-item">⏰ Set Availability</a>
-            <a href="#" class="nav-item">📂 Patient Records</a>
+            <a href="availability.jsp" class="nav-item">⏰ Set Availability</a>
+            <a href="records.jsp" class="nav-item">📂 Patient Records</a>
+            <a href="viewSessionHistory.jsp" class="nav-item">📝 Session History</a>
             <a href="../login.jsp" class="nav-item logout">Logout</a>
         </div>
 
@@ -107,7 +108,11 @@
                 <p>Check your pending requests to approve new sessions.</p>
                 <div style="margin-top: 20px;">
                     <a href="manage.jsp" class="btn-primary">Approve Appointments</a>
-                    <a href="#" class="btn-primary" style="background:#0ea5e9">Add Session Record</a>
+                    <a href="addSessionRecord.jsp"
+                       class="btn-primary"
+                       style="background:#0ea5e9">
+                        Add Session Record
+                    </a>
                 </div>
             </div>
         </div>
