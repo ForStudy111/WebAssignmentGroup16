@@ -4,187 +4,229 @@
  */
 package com.counseling.dao;
 
-import java.sql.*;
+/**
+ *
+ * @author wpy92
+ */
+import com.counseling.model.DBConnection;
+import com.counseling.model.SessionRecord;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.counseling.model.SessionRecord;
-
 public class SessionRecordDAO {
 
-    private String jdbcURL
-            = "jdbc:mysql://localhost:3306/counselling";
+    // CREATE: counsellor adds session notes
+    public boolean addSessionRecord(SessionRecord record) {
+        String sql = "INSERT INTO session_records "
+                + "(booking_id, counsellor_id, session_notes, session_date) "
+                + "VALUES (?, ?, ?, ?)";
 
-    private String jdbcUsername = "root";
-    private String jdbcPassword = "";
+        try (Connection con = DBConnection.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
 
-    private static final String INSERT
-            = "INSERT INTO session_record "
-            + "(booking_id,counsellor_id,session_date,notes,feedback) "
-            + "VALUES(?,?,?,?,?)";
+            ps.setInt(1, record.getBookingId());
+            ps.setInt(2, record.getCounsellorId());
+            ps.setString(3, record.getSessionNotes());
+            ps.setDate(4, record.getSessionDate());
 
-    private static final String SELECT_ALL
-            = "SELECT * FROM session_record";
+            return ps.executeUpdate() > 0;
 
-    private static final String SELECT_BY_ID
-            = "SELECT * FROM session_record WHERE record_id=?";
-
-    private static final String UPDATE
-            = "UPDATE session_record SET notes=?, feedback=? WHERE record_id=?";
-
-    private static final String DELETE
-            = "DELETE FROM session_record WHERE record_id=?";
-
-    protected Connection getConnection()
-            throws SQLException {
-
-        return DriverManager.getConnection(
-                jdbcURL,
-                jdbcUsername,
-                jdbcPassword);
-    }
-
-    // CREATE
-    public void insertRecord(SessionRecord record)
-            throws SQLException {
-
-        Connection con = getConnection();
-
-        PreparedStatement ps
-                = con.prepareStatement(INSERT);
-
-        ps.setInt(1, record.getBookingId());
-        ps.setInt(2, record.getCounsellorId());
-        ps.setString(3, record.getSessionDate());
-        ps.setString(4, record.getNotes());
-        ps.setString(5, record.getFeedback());
-
-        ps.executeUpdate();
-
-    }
-
-    // VIEW
-    public List<SessionRecord> selectAllRecords()
-            throws SQLException {
-
-        List<SessionRecord> list
-                = new ArrayList<>();
-
-        Connection con = getConnection();
-
-        PreparedStatement ps
-                = con.prepareStatement(SELECT_ALL);
-
-        ResultSet rs = ps.executeQuery();
-
-        while (rs.next()) {
-
-            SessionRecord record
-                    = new SessionRecord();
-
-            record.setRecordId(
-                    rs.getInt("record_id"));
-
-            record.setBookingId(
-                    rs.getInt("booking_id"));
-
-            record.setCounsellorId(
-                    rs.getInt("counsellor_id"));
-
-            record.setSessionDate(
-                    rs.getString("session_date"));
-
-            record.setNotes(
-                    rs.getString("notes"));
-
-            record.setFeedback(
-                    rs.getString("feedback"));
-
-            list.add(record);
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
 
-        return list;
+        return false;
     }
 
-    // UPDATE
-    public boolean updateRecord(SessionRecord record)
-            throws SQLException {
+    // READ: all session records
+    public List<SessionRecord> getAllSessionRecords() {
+        List<SessionRecord> recordList = new ArrayList<>();
 
-        Connection con = getConnection();
+        String sql = "SELECT * FROM session_records ORDER BY session_date DESC";
 
-        PreparedStatement ps
-                = con.prepareStatement(UPDATE);
+        try (Connection con = DBConnection.getConnection(); PreparedStatement ps = con.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
 
-        ps.setString(1, record.getNotes());
-        ps.setString(2, record.getFeedback());
-        ps.setInt(3, record.getRecordId());
+            while (rs.next()) {
+                recordList.add(mapSessionRecord(rs));
+            }
 
-        return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
 
+        return recordList;
+    }
+
+    // READ: one session record
+    public SessionRecord getSessionRecordById(int recordId) {
+        String sql = "SELECT * FROM session_records WHERE record_id = ?";
+
+        try (Connection con = DBConnection.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, recordId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapSessionRecord(rs);
+                }
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    // READ: record for one booking
+    public SessionRecord getSessionRecordByBookingId(int bookingId) {
+        String sql = "SELECT * FROM session_records WHERE booking_id = ?";
+
+        try (Connection con = DBConnection.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, bookingId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapSessionRecord(rs);
+                }
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    // READ: records belonging to one counsellor
+    public List<SessionRecord> getRecordsByCounsellorId(int counsellorId) {
+        List<SessionRecord> recordList = new ArrayList<>();
+
+        String sql = "SELECT * FROM session_records "
+                + "WHERE counsellor_id = ? "
+                + "ORDER BY session_date DESC";
+
+        try (Connection con = DBConnection.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, counsellorId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    recordList.add(mapSessionRecord(rs));
+                }
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return recordList;
+    }
+
+    // READ: session history for one student
+    public List<SessionRecord> getRecordsByUserId(int userId) {
+        List<SessionRecord> recordList = new ArrayList<>();
+
+        String sql = "SELECT sr.* FROM session_records sr "
+                + "JOIN bookings b ON sr.booking_id = b.booking_id "
+                + "WHERE b.user_id = ? "
+                + "ORDER BY sr.session_date DESC";
+
+        try (Connection con = DBConnection.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, userId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    recordList.add(mapSessionRecord(rs));
+                }
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return recordList;
+    }
+
+    // UPDATE: counsellor edits notes
+    public boolean updateSessionNotes(int recordId, String sessionNotes) {
+        String sql = "UPDATE session_records SET session_notes = ? "
+                + "WHERE record_id = ?";
+
+        try (Connection con = DBConnection.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, sessionNotes);
+            ps.setInt(2, recordId);
+
+            return ps.executeUpdate() > 0;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
+    // UPDATE: student submits feedback and rating
+    public boolean updateFeedback(int recordId, String feedback, int rating) {
+        String sql = "UPDATE session_records SET feedback = ?, rating = ? "
+                + "WHERE record_id = ?";
+
+        try (Connection con = DBConnection.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, feedback);
+            ps.setInt(2, rating);
+            ps.setInt(3, recordId);
+
+            return ps.executeUpdate() > 0;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return false;
     }
 
     // DELETE
-    public boolean deleteRecord(int id)
-            throws SQLException {
+    public boolean deleteSessionRecord(int recordId) {
+        String sql = "DELETE FROM session_records WHERE record_id = ?";
 
-        Connection con = getConnection();
+        try (Connection con = DBConnection.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
 
-        PreparedStatement ps
-                = con.prepareStatement(DELETE);
+            ps.setInt(1, recordId);
 
-        ps.setInt(1, id);
+            return ps.executeUpdate() > 0;
 
-        return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
 
+        return false;
     }
 
-    public SessionRecord selectRecord(int id) throws SQLException {
+    private SessionRecord mapSessionRecord(ResultSet rs) throws SQLException {
+        SessionRecord record = new SessionRecord();
 
-        SessionRecord record = null;
+        record.setRecordId(rs.getInt("record_id"));
+        record.setBookingId(rs.getInt("booking_id"));
+        record.setCounsellorId(rs.getInt("counsellor_id"));
+        record.setSessionNotes(rs.getString("session_notes"));
+        record.setFeedback(rs.getString("feedback"));
 
-        String sql
-                = "SELECT * FROM session_record WHERE record_id=?";
-
-        Connection con = getConnection();
-
-        PreparedStatement ps
-                = con.prepareStatement(sql);
-
-        ps.setInt(1, id);
-
-        ResultSet rs
-                = ps.executeQuery();
-
-        if (rs.next()) {
-
-            record = new SessionRecord();
-
-            record.setRecordId(
-                    rs.getInt("record_id")
-            );
-
-            record.setBookingId(
-                    rs.getInt("booking_id")
-            );
-
-            record.setCounsellorId(
-                    rs.getInt("counsellor_id")
-            );
-
-            record.setSessionDate(
-                    rs.getString("session_date")
-            );
-
-            record.setNotes(
-                    rs.getString("notes")
-            );
-
-            record.setFeedback(
-                    rs.getString("feedback")
-            );
+        int rating = rs.getInt("rating");
+        if (rs.wasNull()) {
+            record.setRating(null);
+        } else {
+            record.setRating(rating);
         }
+
+        record.setSessionDate(rs.getDate("session_date"));
 
         return record;
     }
-
 }

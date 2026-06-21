@@ -6,91 +6,97 @@ package com.counseling.model;
 
 /**
  *
- * @author DELL
+ * @author wpy92
  */
-public class SessionRecord {
+import java.io.Serializable;
+import java.sql.Date;
+
+public class SessionRecord implements Serializable {
 
     private int recordId;
     private int bookingId;
     private int counsellorId;
-    private String sessionDate;
-    private String notes;
+    private String sessionNotes;
     private String feedback;
-
+    private Integer rating;
+    private Date sessionDate;
 
     public SessionRecord() {
     }
 
-
-    public SessionRecord(int bookingId, int counsellorId,
-                         String sessionDate,
-                         String notes,
-                         String feedback) {
-
+    public SessionRecord(int recordId, int bookingId, int counsellorId,
+            String sessionNotes, String feedback, Integer rating,
+            Date sessionDate) {
+        this.recordId = recordId;
         this.bookingId = bookingId;
         this.counsellorId = counsellorId;
-        this.sessionDate = sessionDate;
-        this.notes = notes;
+        this.sessionNotes = sessionNotes;
         this.feedback = feedback;
+        this.rating = rating;
+        this.sessionDate = sessionDate;
     }
 
+    public SessionRecord(int bookingId, int counsellorId,
+            String sessionNotes, Date sessionDate) {
+        this.bookingId = bookingId;
+        this.counsellorId = counsellorId;
+        this.sessionNotes = sessionNotes;
+        this.sessionDate = sessionDate;
+    }
 
     public int getRecordId() {
         return recordId;
     }
 
-
     public void setRecordId(int recordId) {
         this.recordId = recordId;
     }
-
 
     public int getBookingId() {
         return bookingId;
     }
 
-
     public void setBookingId(int bookingId) {
         this.bookingId = bookingId;
     }
-
 
     public int getCounsellorId() {
         return counsellorId;
     }
 
-
     public void setCounsellorId(int counsellorId) {
         this.counsellorId = counsellorId;
     }
 
-
-    public String getSessionDate() {
-        return sessionDate;
+    public String getSessionNotes() {
+        return sessionNotes;
     }
 
-
-    public void setSessionDate(String sessionDate) {
-        this.sessionDate = sessionDate;
+    public void setSessionNotes(String sessionNotes) {
+        this.sessionNotes = sessionNotes;
     }
-
-
-    public String getNotes() {
-        return notes;
-    }
-
-
-    public void setNotes(String notes) {
-        this.notes = notes;
-    }
-
 
     public String getFeedback() {
         return feedback;
     }
 
-
     public void setFeedback(String feedback) {
         this.feedback = feedback;
+    }
+
+    public Integer getRating() {
+        return rating;
+    }
+
+    public void setRating(Integer rating) {
+        this.rating = rating;
+    }
+
+    public Date getSessionDate() {
+        return sessionDate;
+    }
+
+    public void setSessionDate(Date sessionDate) {
+        this.sessionDate = sessionDate;
     }
 }
