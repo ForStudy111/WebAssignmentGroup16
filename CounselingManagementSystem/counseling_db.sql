@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3307
--- Generation Time: Jun 21, 2026 at 09:18 AM
+-- Generation Time: Jun 21, 2026 at 09:57 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -62,7 +62,8 @@ INSERT INTO `bookings` (`booking_id`, `user_id`, `schedule_id`, `booking_date`, 
 (4, 3, 4, '2026-06-20', 'CANCELLED', 'STUDENT', NULL, NULL, 'NOT_SYNCED'),
 (5, 2, 5, '2026-06-20', 'CANCELLED', 'COUNSELOR', NULL, NULL, 'NOT_SYNCED'),
 (6, 3, 6, '2026-06-20', 'COMPLETED', NULL, NULL, NULL, 'NOT_SYNCED'),
-(7, 2, 9, '2026-06-20', 'CANCELLED', 'ADMIN', NULL, NULL, 'NOT_SYNCED');
+(7, 2, 9, '2026-06-20', 'CANCELLED', 'ADMIN', NULL, NULL, 'NOT_SYNCED'),
+(8, 2, 10, '2026-06-21', 'REJECTED', NULL, NULL, NULL, 'NOT_SYNCED');
 
 -- --------------------------------------------------------
 
@@ -141,7 +142,8 @@ INSERT INTO `schedules` (`schedule_id`, `counsellor_id`, `available_date`, `avai
 (6, 1, '2026-06-20', '10:00:00', 'BOOKED'),
 (7, 2, '2026-06-25', '09:00:00', 'AVAILABLE'),
 (8, 1, '2026-06-25', '14:30:00', 'AVAILABLE'),
-(9, 2, '2026-06-26', '16:00:00', 'AVAILABLE');
+(9, 2, '2026-06-26', '16:00:00', 'AVAILABLE'),
+(10, 1, '2026-06-22', '17:50:00', 'AVAILABLE');
 
 -- --------------------------------------------------------
 
@@ -165,7 +167,7 @@ CREATE TABLE `session_records` (
 
 INSERT INTO `session_records` (`record_id`, `booking_id`, `counsellor_id`, `session_notes`, `feedback`, `rating`, `session_date`) VALUES
 (1, 6, 1, 'Student discussed academic stress and agreed to follow a weekly study plan.', 'The session was helpful and clear.', 5, '2026-06-20'),
-(2, 1, 1, 'good job', NULL, NULL, '2026-06-22');
+(2, 1, 1, 'good job', 'what the hell', 5, '2026-06-22');
 
 -- --------------------------------------------------------
 
@@ -269,7 +271,7 @@ ALTER TABLE `availability`
 -- AUTO_INCREMENT for table `bookings`
 --
 ALTER TABLE `bookings`
-  MODIFY `booking_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `booking_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `counsellors`
@@ -287,7 +289,7 @@ ALTER TABLE `google_calendar_connections`
 -- AUTO_INCREMENT for table `schedules`
 --
 ALTER TABLE `schedules`
-  MODIFY `schedule_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `schedule_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `session_records`
