@@ -1,120 +1,197 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@page import="com.counseling.model.User"%>
+<%@page import="com.counseling.dao.GoogleCalendarConnectionDAO"%>
+
+<%
+    User currentUser = (User) session.getAttribute("currentUser");
+
+    if (currentUser == null
+            || !"COUNSELOR".equalsIgnoreCase(currentUser.getRole())) {
+
+        response.sendRedirect(
+                request.getContextPath()
+                + "/login.jsp?error=true&msg=Please+log+in+as+a+counsellor."
+        );
+        return;
+    }
+
+    String message = request.getParameter("msg");
+
+    GoogleCalendarConnectionDAO calendarConnectionDAO
+            = new GoogleCalendarConnectionDAO();
+
+    boolean googleCalendarConnected
+            = calendarConnectionDAO.isConnected(currentUser.getUserId());
+%>
+
 <!DOCTYPE html>
-<html>
+<html lang="en">
     <head>
-        <title>Counselor Portal | CounselingPro</title>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-        <style>
-            body {
-                font-family: 'Inter', sans-serif;
-                margin: 0;
-                display: flex;
-                background: #f8fafc;
-                height: 100vh;
-            }
-            .sidebar {
-                width: 260px;
-                background: #312e81;
-                color: white;
-                padding: 20px;
-                display: flex;
-                flex-direction: column;
-            }
-            .sidebar h2 {
-                font-size: 1.2rem;
-                margin-bottom: 2rem;
-                color: #c7d2fe;
-            }
-            .nav-item {
-                padding: 12px;
-                color: #e0e7ff;
-                text-decoration: none;
-                border-radius: 8px;
-                margin-bottom: 8px;
-                transition: 0.2s;
-            }
-            .nav-item:hover {
-                background: #4338ca;
-            }
-            .logout {
-                margin-top: auto;
-                color: #fca5a5;
-            }
-            .main {
-                flex: 1;
-                padding: 40px;
-                overflow-y: auto;
-            }
-            .card {
-                background: white;
-                padding: 25px;
-                border-radius: 12px;
-                box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-                margin-bottom: 20px;
-            }
-            .header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 30px;
-            }
-            .btn-primary {
-                background: #4f46e5;
-                color: white;
-                padding: 12px 24px;
-                border-radius: 8px;
-                text-decoration: none;
-                font-weight: 600;
-                display: inline-block;
-                transition: 0.3s;
-                border: none;
-            }
-            .btn-primary:hover {
-                background: #4338ca;
-            }
-            .status-pill {
-                background: #dcfce7;
-                color: #166534;
-                padding: 4px 12px;
-                border-radius: 20px;
-                font-size: 0.8rem;
-                font-weight: bold;
-            }
-        </style>
+        <meta charset="UTF-8">
+        <title>Counsellor Dashboard | Counseling System</title>
+
+        <link rel="stylesheet"
+              href="<%= request.getContextPath()%>/css/counselor.css">
     </head>
-    <body>
-        <div class="sidebar">
-            <h2>COUNSELOR HUB</h2>
-            <a href="manage.jsp" class="nav-item">📅 Manage Appointments</a>
-            <a href="availability.jsp" class="nav-item">⏰ Set Availability</a>
-            <a href="records.jsp" class="nav-item">📂 Patient Records</a>
-            <a href="viewSessionHistory.jsp" class="nav-item">📝 Session History</a>
-            <a href="../login.jsp" class="nav-item logout">Logout</a>
-        </div>
 
-        <div class="main">
-            <div class="header">
-                <h1>Counselor Dashboard</h1>
-                <span class="status-pill">Active Session</span>
-            </div>
+    <body class="dashboard-page">
+        <div class="dashboard-layout">
 
-            <div class="card">
-                <h3>Welcome, <%= session.getAttribute("user")%></h3>
-                <p style="color: #64748b;">Profile: <b><%= session.getAttribute("details")%></b></p>
-            </div>
+            <aside class="sidebar">
+                <h2 class="sidebar-brand">Counsellor Portal</h2>
 
-            <div class="card">
-                <h3>Next Tasks</h3>
-                <p>Check your pending requests to approve new sessions.</p>
-                <div style="margin-top: 20px;">
-                    <a href="manage.jsp" class="btn-primary">Approve Appointments</a>
-                    <a href="addSessionRecord.jsp"
-                       class="btn-primary"
-                       style="background:#0ea5e9">
-                        Add Session Record
-                    </a>
+                <ul class="sidebar-menu">
+                    <li>
+                        <a class="active"
+                           href="<%= request.getContextPath()%>/counselor/dashboard.jsp">
+                            Dashboard
+                        </a>
+                    </li>
+
+                    <li>
+                        <a href="<%= request.getContextPath()%>/ScheduleServlet?action=list">
+                            Manage Availability
+                        </a>
+                    </li>
+
+                    <li>
+                        <a href="<%= request.getContextPath()%>/BookingServlet?action=counsellorList">
+                            Manage Bookings
+                        </a>
+                    </li>
+
+                    <li>
+                        <a href="<%= request.getContextPath()%>/SessionRecordServlet?action=counsellorList">
+                            Session Records
+                        </a>
+                    </li>
+
+                    <li>
+                        <a href="<%= request.getContextPath()%>/UserServlet?action=profile">
+                            My Profile
+                        </a>
+                    </li>
+
+                    <li>
+                        <a class="logout-link"
+                           href="<%= request.getContextPath()%>/LogoutServlet">
+                            Logout
+                        </a>
+                    </li>
+                </ul>
+            </aside>
+
+            <main class="main-content">
+
+                <div class="page-header">
+                    <div>
+                        <h1>Welcome, <%= currentUser.getFullName()%></h1>
+                        <p>
+                            Manage your availability, booking requests,
+                            and counselling session records.
+                        </p>
+                    </div>
                 </div>
-            </div>
+
+                <% if (message != null && !message.trim().isEmpty()) {%>
+                <div class="message-success">
+                    <%= message%>
+                </div>
+                <% }%>
+
+                <section class="card">
+                    <h2 class="card-title">Manage Your Availability</h2>
+
+                    <p>
+                        Add available counselling time slots for students,
+                        edit unbooked slots, or remove unavailable slots.
+                    </p>
+
+                    <div class="form-actions">
+                        <a class="primary-button"
+                           href="<%= request.getContextPath()%>/ScheduleServlet?action=list">
+                            Manage Availability
+                        </a>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <h2 class="card-title">Appointment Requests</h2>
+
+                    <p>
+                        Review student bookings, approve pending requests,
+                        or cancel appointments when necessary.
+                    </p>
+
+                    <div class="form-actions">
+                        <a class="primary-button"
+                           href="<%= request.getContextPath()%>/BookingServlet?action=counsellorList">
+                            Manage Bookings
+                        </a>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <h2 class="card-title">Session Records</h2>
+
+                    <p>
+                        Record confidential session notes after an approved
+                        counselling appointment has been completed.
+                    </p>
+
+                    <div class="form-actions">
+                        <a class="primary-button"
+                           href="<%= request.getContextPath()%>/SessionRecordServlet?action=counsellorList">
+                            View Session Records
+                        </a>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <h2 class="card-title">Google Calendar Connection</h2>
+
+                    <% if (googleCalendarConnected) {%>
+
+                    <p>
+                        Your Google Calendar is connected. Approved bookings
+                        can be added to your calendar automatically.
+                    </p>
+
+                    <div class="form-actions">
+                        <button type="button"
+                                class="secondary-button"
+                                disabled>
+                            Google Calendar Connected
+                        </button>
+
+                        <form action="<%= request.getContextPath()%>/GoogleCalendarDisconnectServlet"
+                              method="post"
+                              onsubmit="return confirm('Disconnect Google Calendar from this system?');">
+
+                            <button type="submit" class="danger-button">
+                                Disconnect Google Calendar
+                            </button>
+                        </form>
+                    </div>
+
+                    <% } else {%>
+
+                    <p>
+                        Connect your Google Calendar so approved counselling
+                        appointments can be added automatically.
+                    </p>
+
+                    <div class="form-actions">
+                        <a class="primary-button"
+                           href="<%= request.getContextPath()%>/GoogleCalendarConnectServlet">
+                            Connect Google Calendar
+                        </a>
+                    </div>
+
+                    <% }%>
+                </section>
+
+            </main>
         </div>
     </body>
 </html>

@@ -1,83 +1,237 @@
-<%@page import="com.counseling.data.DBConnection"%>
-<%@page import="java.sql.*"%>
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@page import="com.counseling.model.User"%>
+<%@page import="com.counseling.model.Booking"%>
+<%@page import="com.counseling.model.Schedule"%>
+<%@page import="com.counseling.model.Counsellor"%>
+<%@page import="java.util.List"%>
+<%@page import="java.util.Map"%>
+
+<%
+    User currentUser = (User) session.getAttribute("currentUser");
+
+    if (currentUser == null
+            || !"ADMIN".equalsIgnoreCase(currentUser.getRole())) {
+
+        response.sendRedirect(
+                request.getContextPath()
+                + "/login.jsp?error=true&msg=Please+log+in+as+an+admin."
+        );
+        return;
+    }
+
+    List<Booking> bookingList =
+            (List<Booking>) request.getAttribute("bookingList");
+
+    Map<Integer, Schedule> scheduleMap =
+            (Map<Integer, Schedule>) request.getAttribute("scheduleMap");
+
+    Map<Integer, Counsellor> counsellorMap =
+            (Map<Integer, Counsellor>) request.getAttribute("counsellorMap");
+
+    Map<Integer, User> studentMap =
+            (Map<Integer, User>) request.getAttribute("studentMap");
+
+    if (bookingList == null) {
+        response.sendRedirect(
+                request.getContextPath()
+                + "/BookingServlet?action=adminList"
+        );
+        return;
+    }
+
+    String message = request.getParameter("msg");
+%>
+
 <!DOCTYPE html>
-<html>
+<html lang="en">
     <head>
-        <title>Master Monitor | CounselingPro</title>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-        <style>
-            body { font-family: 'Inter', sans-serif; background: #f7fafc; margin: 0; padding: 40px; }
-            .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-            h2 { margin-top: 0; color: #2d3748; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; overflow: hidden; border-radius: 8px; }
-            th, td { padding: 14px; text-align: left; border-bottom: 1px solid #edf2f7; }
-            th { background: #f1f5f9; color: #4a5568; font-weight: 600; }
-            .status-badge { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
-        </style>
+        <meta charset="UTF-8">
+        <title>All Bookings | Counseling System</title>
+
+        <link rel="stylesheet"
+              href="<%= request.getContextPath() %>/css/admin.css">
     </head>
-    <body>
-        <div class="card">
-            <h2>Master System Appointment Logs</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Booking ID</th>
-                        <th>Student Account</th>
-                        <th>Assigned Counselor</th>
-                        <th>Scheduled Date</th>
-                        <th>System Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <% 
-                        boolean dataFound = false;
-                        String sql = "SELECT * FROM bookings";
-                        try (Connection conn = DBConnection.getConnection();
-                             Statement stmt = conn.createStatement();
-                             ResultSet rs = stmt.executeQuery(sql)) {
-                             
-                             while(rs.next()) {
-                                 dataFound = true;
-                                 String id = rs.getString("id");
-                                 String student = rs.getString("student");
-                                 String counselor = rs.getString("counselor");
-                                 String date = rs.getString("booking_date");
-                                 String status = rs.getString("status");
-                    %>
-                    <tr>
-                        <td><b>#<%= id %></b></td>
-                        <td><%= student %></td>
-                        <td><%= counselor %></td>
-                        <td><%= date %></td>
-                        <td>
-                            <%
-                                String color = "#718096";
-                                String bg = "#e2e8f0";
-                                if("PENDING".equalsIgnoreCase(status)) { bg = "#fef3c7"; color = "#d97706"; }
-                                else if("APPROVED".equalsIgnoreCase(status)) { bg = "#dcfce7"; color = "#15803d"; }
-                                else if("CANCELLED".equalsIgnoreCase(status)) { bg = "#fee2e2"; color = "#b91c1c"; }
-                                else if("RESCHEDULED".equalsIgnoreCase(status)) { bg = "#e0e7ff"; color = "#4338ca"; }
-                            %>
-                            <span class="status-badge" style="background: <%= bg %>; color: <%= color %>;"><%= status %></span>
-                        </td>
-                    </tr>
-                    <% 
-                             }
-                        } catch(Exception e) { 
-                            out.println("<tr><td colspan='5' style='color:red;'>SQL Failure: " + e.getMessage() + "</td></tr>"); 
-                        }
-                        
-                        if(!dataFound) {
-                    %>
-                    <tr>
-                        <td colspan="5" style="text-align: center; color: #718096;">No operational records found inside active data tables.</td>
-                    </tr>
-                    <% } %>
-                </tbody>
-            </table>
-            <br>
-            <a href="dashboard.jsp" style="color: #4a5568; text-decoration: none; font-weight: 600;">← Return to Admin Panel</a>
+
+    <body class="dashboard-page">
+        <div class="dashboard-layout">
+
+            <aside class="sidebar">
+                <h2 class="sidebar-brand">Admin Portal</h2>
+
+                <ul class="sidebar-menu">
+                    <li>
+                        <a href="<%= request.getContextPath() %>/admin/dashboard.jsp">
+                            Dashboard
+                        </a>
+                    </li>
+
+                    <li>
+                        <a href="<%= request.getContextPath() %>/UserServlet?action=list">
+                            Manage Users
+                        </a>
+                    </li>
+
+                    <li>
+                        <a href="<%= request.getContextPath() %>/CounsellorServlet?action=list">
+                            Manage Counsellors
+                        </a>
+                    </li>
+
+                    <li>
+                        <a class="active"
+                           href="<%= request.getContextPath() %>/BookingServlet?action=adminList">
+                            View Bookings
+                        </a>
+                    </li>
+
+                    <li>
+                        <a href="<%= request.getContextPath() %>/UserServlet?action=profile">
+                            My Profile
+                        </a>
+                    </li>
+
+                    <li>
+                        <a class="logout-link"
+                           href="<%= request.getContextPath() %>/LogoutServlet">
+                            Logout
+                        </a>
+                    </li>
+                </ul>
+            </aside>
+
+            <main class="main-content">
+
+                <div class="page-header">
+                    <div>
+                        <h1>Booking Monitoring</h1>
+                        <p>Review counselling bookings across the whole system.</p>
+                    </div>
+                </div>
+
+                <% if (message != null && !message.trim().isEmpty()) { %>
+                <div class="message-success">
+                    <%= message %>
+                </div>
+                <% } %>
+
+                <section class="card">
+                    <h2 class="card-title">All Counselling Bookings</h2>
+
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Booking ID</th>
+                                    <th>Student</th>
+                                    <th>Counsellor</th>
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                    <th>Booking Date</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                <% if (!bookingList.isEmpty()) {
+                                    for (Booking booking : bookingList) {
+
+                                        Schedule schedule = scheduleMap.get(
+                                                booking.getScheduleId()
+                                        );
+
+                                        User student = studentMap.get(
+                                                booking.getUserId()
+                                        );
+
+                                        Counsellor counsellor = schedule != null
+                                                ? counsellorMap.get(
+                                                        schedule.getCounsellorId()
+                                                  )
+                                                : null;
+
+                                        String status = booking.getBookingStatus();
+                                        String statusClass = "badge-pending";
+
+                                        if ("APPROVED".equalsIgnoreCase(status)) {
+                                            statusClass = "badge-approved";
+
+                                        } else if ("COMPLETED".equalsIgnoreCase(status)) {
+                                            statusClass = "badge-completed";
+
+                                        } else if ("CANCELLED".equalsIgnoreCase(status)) {
+                                            statusClass = "badge-cancelled";
+                                        }
+                                %>
+
+                                <tr>
+                                    <td><%= booking.getBookingId() %></td>
+
+                                    <td>
+                                        <%= student != null
+                                                ? student.getFullName()
+                                                : "-" %>
+                                    </td>
+
+                                    <td>
+                                        <%= counsellor != null
+                                                ? counsellor.getCounsellorName()
+                                                : "-" %>
+                                    </td>
+
+                                    <td>
+                                        <%= schedule != null
+                                                ? schedule.getAvailableDate()
+                                                : "-" %>
+                                    </td>
+
+                                    <td>
+                                        <%= schedule != null
+                                                ? schedule.getAvailableTime()
+                                                : "-" %>
+                                    </td>
+
+                                    <td><%= booking.getBookingDate() %></td>
+
+                                    <td>
+                                        <span class="badge <%= statusClass %>">
+                                            <%= status %>
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        <% if ("PENDING".equalsIgnoreCase(status)
+                                                || "APPROVED".equalsIgnoreCase(status)) { %>
+
+                                        <a class="danger-button"
+                                           href="<%= request.getContextPath() %>/BookingServlet?action=adminCancel&id=<%= booking.getBookingId() %>"
+                                           onclick="return confirm('Cancel this booking and reopen its schedule slot?');">
+                                            Cancel Booking
+                                        </a>
+
+                                        <% } else { %>
+
+                                        <span>-</span>
+
+                                        <% } %>
+                                    </td>
+                                </tr>
+
+                                <%  }
+                               } else { %>
+
+                                <tr>
+                                    <td colspan="8" class="empty-state">
+                                        No counselling bookings have been created yet.
+                                    </td>
+                                </tr>
+
+                                <% } %>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </main>
         </div>
     </body>
 </html>

@@ -2,6 +2,7 @@
 <%@page import="com.counseling.model.User"%>
 <%@page import="com.counseling.model.Booking"%>
 <%@page import="com.counseling.model.Schedule"%>
+<%@page import="com.counseling.model.Counsellor"%>
 <%@page import="com.counseling.model.SessionRecord"%>
 <%@page import="java.util.List"%>
 <%@page import="java.util.Map"%>
@@ -10,11 +11,11 @@
     User currentUser = (User) session.getAttribute("currentUser");
 
     if (currentUser == null
-            || !"COUNSELOR".equalsIgnoreCase(currentUser.getRole())) {
+            || !"STUDENT".equalsIgnoreCase(currentUser.getRole())) {
 
         response.sendRedirect(
                 request.getContextPath()
-                + "/login.jsp?error=true&msg=Please+log+in+as+a+counsellor."
+                + "/login.jsp?error=true&msg=Please+log+in+as+a+student."
         );
         return;
     }
@@ -28,13 +29,13 @@
     Map<Integer, Schedule> scheduleMap
             = (Map<Integer, Schedule>) request.getAttribute("scheduleMap");
 
-    Map<Integer, User> studentMap
-            = (Map<Integer, User>) request.getAttribute("studentMap");
+    Map<Integer, Counsellor> counsellorMap
+            = (Map<Integer, Counsellor>) request.getAttribute("counsellorMap");
 
     if (recordList == null) {
         response.sendRedirect(
                 request.getContextPath()
-                + "/SessionRecordServlet?action=counsellorList"
+                + "/SessionRecordServlet?action=studentHistory"
         );
         return;
     }
@@ -46,41 +47,41 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8">
-        <title>Session Records | Counseling System</title>
+        <title>Session History | Counseling System</title>
 
         <link rel="stylesheet"
-              href="<%= request.getContextPath()%>/css/counselor.css">
+              href="<%= request.getContextPath()%>/css/student.css">
     </head>
 
     <body class="dashboard-page">
         <div class="dashboard-layout">
 
             <aside class="sidebar">
-                <h2 class="sidebar-brand">Counsellor Portal</h2>
+                <h2 class="sidebar-brand">Student Care</h2>
 
                 <ul class="sidebar-menu">
                     <li>
-                        <a href="<%= request.getContextPath()%>/counselor/dashboard.jsp">
+                        <a href="<%= request.getContextPath()%>/student/dashboard.jsp">
                             Dashboard
                         </a>
                     </li>
 
                     <li>
-                        <a href="<%= request.getContextPath()%>/ScheduleServlet?action=list">
-                            Manage Availability
+                        <a href="<%= request.getContextPath()%>/BookingServlet?action=available">
+                            Book Session
                         </a>
                     </li>
 
                     <li>
-                        <a href="<%= request.getContextPath()%>/BookingServlet?action=counsellorList">
-                            Manage Bookings
+                        <a href="<%= request.getContextPath()%>/BookingServlet?action=myBookings">
+                            My Bookings
                         </a>
                     </li>
 
                     <li>
                         <a class="active"
-                           href="<%= request.getContextPath()%>/SessionRecordServlet?action=counsellorList">
-                            Session Records
+                           href="<%= request.getContextPath()%>/SessionRecordServlet?action=studentHistory">
+                            Session History
                         </a>
                     </li>
 
@@ -103,14 +104,9 @@
 
                 <div class="page-header">
                     <div>
-                        <h1>Session Records</h1>
-                        <p>Review, update, or remove completed counselling session notes.</p>
+                        <h1>Session History</h1>
+                        <p>View completed counselling sessions and submit feedback.</p>
                     </div>
-
-                    <a class="primary-button"
-                       href="<%= request.getContextPath()%>/BookingServlet?action=counsellorList">
-                        View Approved Bookings
-                    </a>
                 </div>
 
                 <% if (message != null && !message.trim().isEmpty()) {%>
@@ -120,20 +116,19 @@
                 <% } %>
 
                 <section class="card">
-                    <h2 class="card-title">Completed Session Records</h2>
+                    <h2 class="card-title">Completed Sessions</h2>
 
                     <div class="table-container">
                         <table class="data-table">
                             <thead>
                                 <tr>
                                     <th>Record ID</th>
-                                    <th>Student</th>
-                                    <th>Session Date</th>
-                                    <th>Session Time</th>
-                                    <th>Notes</th>
+                                    <th>Counsellor</th>
+                                    <th>Date</th>
+                                    <th>Time</th>
                                     <th>Feedback</th>
                                     <th>Rating</th>
-                                    <th>Actions</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
 
@@ -151,19 +146,21 @@
                                                     )
                                                     : null;
 
-                                            User student = booking != null
-                                                    ? studentMap.get(
-                                                            booking.getUserId()
-                                                    )
-                                                    : null;
+                                            Counsellor counsellor = counsellorMap.get(
+                                                    record.getCounsellorId()
+                                            );
+
+                                            boolean hasFeedback
+                                                    = record.getFeedback() != null
+                                                    && !record.getFeedback().trim().isEmpty();
                                 %>
 
                                 <tr>
                                     <td><%= record.getRecordId()%></td>
 
                                     <td>
-                                        <%= student != null
-                                                ? student.getFullName()
+                                        <%= counsellor != null
+                                                ? counsellor.getCounsellorName()
                                                 : "-"%>
                                     </td>
 
@@ -180,14 +177,9 @@
                                     </td>
 
                                     <td>
-                                        <%= record.getSessionNotes()%>
-                                    </td>
-
-                                    <td>
-                                        <%= record.getFeedback() != null
-                                                && !record.getFeedback().trim().isEmpty()
+                                        <%= hasFeedback
                                                 ? record.getFeedback()
-                                                : "No feedback yet"%>
+                                                : "No feedback submitted"%>
                                     </td>
 
                                     <td>
@@ -197,18 +189,14 @@
                                     </td>
 
                                     <td>
-                                        <div class="action-group">
-                                            <a class="secondary-button"
-                                               href="<%= request.getContextPath()%>/SessionRecordServlet?action=edit&id=<%= record.getRecordId()%>">
-                                                Edit Notes
-                                            </a>
-
-                                            <a class="danger-button"
-                                               href="<%= request.getContextPath()%>/SessionRecordServlet?action=delete&id=<%= record.getRecordId()%>"
-                                               onclick="return confirm('Delete this session record?');">
-                                                Delete
-                                            </a>
-                                        </div>
+                                        <a class="<%= hasFeedback
+                                                ? "secondary-button"
+                                                : "primary-button"%>"
+                                           href="<%= request.getContextPath()%>/SessionRecordServlet?action=feedback&id=<%= record.getRecordId()%>">
+                                            <%= hasFeedback
+                                                    ? "View / Edit Feedback"
+                                                    : "Submit Feedback"%>
+                                        </a>
                                     </td>
                                 </tr>
 
@@ -216,8 +204,8 @@
                             } else { %>
 
                                 <tr>
-                                    <td colspan="8" class="empty-state">
-                                        No session records have been created yet.
+                                    <td colspan="7" class="empty-state">
+                                        You do not have any completed counselling sessions yet.
                                     </td>
                                 </tr>
 
