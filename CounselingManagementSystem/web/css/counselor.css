@@ -294,4 +294,18 @@ body.dashboard-page {
     .form-grid {
         grid-template-columns: 1fr;
     }
+    .badge-rejected {
+        background: #f3e8ff;
+        color: #7e22ce;
+    }
+
+    .badge-cancelled {
+        background: #fde2e2;
+        color: #b33a3a;
+    }
+
+    .badge-completed {
+        background: #d8f1ed;
+        color: #17665f;
+    }
 }

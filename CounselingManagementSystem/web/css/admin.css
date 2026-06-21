@@ -282,6 +282,30 @@ body.dashboard-page {
     color: #64748b;
     text-align: center;
 }
+.badge-pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.badge-approved {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.badge-completed {
+    background: #d1fae5;
+    color: #047857;
+}
+
+.badge-rejected {
+    background: #f3e8ff;
+    color: #7e22ce;
+}
+
+.badge-cancelled {
+    background: #fee2e2;
+    color: #b91c1c;
+}
 
 @media (max-width: 760px) {
     .dashboard-layout {

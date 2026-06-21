@@ -19,17 +19,17 @@
         return;
     }
 
-    List<Booking> bookingList =
-            (List<Booking>) request.getAttribute("bookingList");
+    List<Booking> bookingList
+            = (List<Booking>) request.getAttribute("bookingList");
 
-    Map<Integer, Schedule> scheduleMap =
-            (Map<Integer, Schedule>) request.getAttribute("scheduleMap");
+    Map<Integer, Schedule> scheduleMap
+            = (Map<Integer, Schedule>) request.getAttribute("scheduleMap");
 
-    Map<Integer, Counsellor> counsellorMap =
-            (Map<Integer, Counsellor>) request.getAttribute("counsellorMap");
+    Map<Integer, Counsellor> counsellorMap
+            = (Map<Integer, Counsellor>) request.getAttribute("counsellorMap");
 
-    Map<Integer, User> studentMap =
-            (Map<Integer, User>) request.getAttribute("studentMap");
+    Map<Integer, User> studentMap
+            = (Map<Integer, User>) request.getAttribute("studentMap");
 
     if (bookingList == null) {
         response.sendRedirect(
@@ -49,7 +49,7 @@
         <title>All Bookings | Counseling System</title>
 
         <link rel="stylesheet"
-              href="<%= request.getContextPath() %>/css/admin.css">
+              href="<%= request.getContextPath()%>/css/admin.css">
     </head>
 
     <body class="dashboard-page">
@@ -60,39 +60,39 @@
 
                 <ul class="sidebar-menu">
                     <li>
-                        <a href="<%= request.getContextPath() %>/admin/dashboard.jsp">
+                        <a href="<%= request.getContextPath()%>/admin/dashboard.jsp">
                             Dashboard
                         </a>
                     </li>
 
                     <li>
-                        <a href="<%= request.getContextPath() %>/UserServlet?action=list">
+                        <a href="<%= request.getContextPath()%>/UserServlet?action=list">
                             Manage Users
                         </a>
                     </li>
 
                     <li>
-                        <a href="<%= request.getContextPath() %>/CounsellorServlet?action=list">
+                        <a href="<%= request.getContextPath()%>/CounsellorServlet?action=list">
                             Manage Counsellors
                         </a>
                     </li>
 
                     <li>
                         <a class="active"
-                           href="<%= request.getContextPath() %>/BookingServlet?action=adminList">
+                           href="<%= request.getContextPath()%>/BookingServlet?action=adminList">
                             View Bookings
                         </a>
                     </li>
 
                     <li>
-                        <a href="<%= request.getContextPath() %>/UserServlet?action=profile">
+                        <a href="<%= request.getContextPath()%>/UserServlet?action=profile">
                             My Profile
                         </a>
                     </li>
 
                     <li>
                         <a class="logout-link"
-                           href="<%= request.getContextPath() %>/LogoutServlet">
+                           href="<%= request.getContextPath()%>/LogoutServlet">
                             Logout
                         </a>
                     </li>
@@ -104,13 +104,13 @@
                 <div class="page-header">
                     <div>
                         <h1>Booking Monitoring</h1>
-                        <p>Review counselling bookings across the whole system.</p>
+                        <p>View all counselling bookings across the system.</p>
                     </div>
                 </div>
 
-                <% if (message != null && !message.trim().isEmpty()) { %>
+                <% if (message != null && !message.trim().isEmpty()) {%>
                 <div class="message-success">
-                    <%= message %>
+                    <%= message%>
                 </div>
                 <% } %>
 
@@ -134,91 +134,116 @@
 
                             <tbody>
                                 <% if (!bookingList.isEmpty()) {
-                                    for (Booking booking : bookingList) {
+                                        for (Booking booking : bookingList) {
 
-                                        Schedule schedule = scheduleMap.get(
-                                                booking.getScheduleId()
-                                        );
+                                            Schedule schedule = scheduleMap.get(
+                                                    booking.getScheduleId()
+                                            );
 
-                                        User student = studentMap.get(
-                                                booking.getUserId()
-                                        );
+                                            User student = studentMap.get(
+                                                    booking.getUserId()
+                                            );
 
-                                        Counsellor counsellor = schedule != null
-                                                ? counsellorMap.get(
-                                                        schedule.getCounsellorId()
-                                                  )
-                                                : null;
+                                            Counsellor counsellor = schedule != null
+                                                    ? counsellorMap.get(
+                                                            schedule.getCounsellorId()
+                                                    )
+                                                    : null;
 
-                                        String status = booking.getBookingStatus();
-                                        String statusClass = "badge-pending";
+                                            String status = booking.getBookingStatus();
+                                            String statusText = status;
+                                            String statusClass = "badge-pending";
 
-                                        if ("APPROVED".equalsIgnoreCase(status)) {
-                                            statusClass = "badge-approved";
+                                            if ("PENDING".equalsIgnoreCase(status)) {
+                                                statusText = "Pending";
 
-                                        } else if ("COMPLETED".equalsIgnoreCase(status)) {
-                                            statusClass = "badge-completed";
+                                            } else if ("APPROVED".equalsIgnoreCase(status)) {
+                                                statusText = "Approved";
+                                                statusClass = "badge-approved";
 
-                                        } else if ("CANCELLED".equalsIgnoreCase(status)) {
-                                            statusClass = "badge-cancelled";
-                                        }
+                                            } else if ("REJECTED".equalsIgnoreCase(status)) {
+                                                statusText = "Rejected";
+                                                statusClass = "badge-rejected";
+
+                                            } else if ("COMPLETED".equalsIgnoreCase(status)) {
+                                                statusText = "Completed";
+                                                statusClass = "badge-completed";
+
+                                            } else if ("CANCELLED".equalsIgnoreCase(status)) {
+                                                statusClass = "badge-cancelled";
+
+                                                String cancelledBy = booking.getCancelledBy();
+
+                                                if ("STUDENT".equalsIgnoreCase(cancelledBy)) {
+                                                    cancelledBy = "Student";
+
+                                                } else if ("COUNSELOR".equalsIgnoreCase(cancelledBy)) {
+                                                    cancelledBy = "Counsellor";
+
+                                                } else if ("ADMIN".equalsIgnoreCase(cancelledBy)) {
+                                                    cancelledBy = "Admin";
+                                                }
+
+                                                statusText = cancelledBy != null
+                                                        && !cancelledBy.trim().isEmpty()
+                                                        ? "Cancelled by " + cancelledBy
+                                                        : "Cancelled";
+                                            }
                                 %>
 
                                 <tr>
-                                    <td><%= booking.getBookingId() %></td>
+                                    <td><%= booking.getBookingId()%></td>
 
                                     <td>
                                         <%= student != null
                                                 ? student.getFullName()
-                                                : "-" %>
+                                                : "-"%>
                                     </td>
 
                                     <td>
                                         <%= counsellor != null
                                                 ? counsellor.getCounsellorName()
-                                                : "-" %>
+                                                : "-"%>
                                     </td>
 
                                     <td>
                                         <%= schedule != null
                                                 ? schedule.getAvailableDate()
-                                                : "-" %>
+                                                : "-"%>
                                     </td>
 
                                     <td>
                                         <%= schedule != null
                                                 ? schedule.getAvailableTime()
-                                                : "-" %>
+                                                : "-"%>
                                     </td>
 
-                                    <td><%= booking.getBookingDate() %></td>
+                                    <td><%= booking.getBookingDate()%></td>
 
                                     <td>
-                                        <span class="badge <%= statusClass %>">
-                                            <%= status %>
+                                        <span class="badge <%= statusClass%>">
+                                            <%= statusText%>
                                         </span>
                                     </td>
 
                                     <td>
                                         <% if ("PENDING".equalsIgnoreCase(status)
-                                                || "APPROVED".equalsIgnoreCase(status)) { %>
+                                                    || "APPROVED".equalsIgnoreCase(status)) {%>
 
                                         <a class="danger-button"
-                                           href="<%= request.getContextPath() %>/BookingServlet?action=adminCancel&id=<%= booking.getBookingId() %>"
-                                           onclick="return confirm('Cancel this booking and reopen its schedule slot?');">
+                                           href="<%= request.getContextPath()%>/CancelBookingServlet?id=<%= booking.getBookingId()%>"
+                                           onclick="return confirm('Cancel this booking as an administrator?');">
                                             Cancel Booking
                                         </a>
 
                                         <% } else { %>
-
-                                        <span>-</span>
-
+                                        -
                                         <% } %>
                                     </td>
                                 </tr>
 
                                 <%  }
-                               } else { %>
+                            } else { %>
 
                                 <tr>
                                     <td colspan="8" class="empty-state">
@@ -226,7 +251,7 @@
                                     </td>
                                 </tr>
 
-                                <% } %>
+                                <% }%>
                             </tbody>
                         </table>
                     </div>

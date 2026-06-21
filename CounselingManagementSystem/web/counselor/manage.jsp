@@ -75,7 +75,7 @@
                     </li>
 
                     <li>
-                        <a href="#">
+                        <a href="<%= request.getContextPath()%>/SessionRecordServlet?action=counsellorList">
                             Session Records
                         </a>
                     </li>
@@ -96,10 +96,11 @@
             </aside>
 
             <main class="main-content">
+
                 <div class="page-header">
                     <div>
                         <h1>Manage Bookings</h1>
-                        <p>Review and manage counselling session requests.</p>
+                        <p>Review active bookings and completed booking history.</p>
                     </div>
                 </div>
 
@@ -110,7 +111,7 @@
                 <% } %>
 
                 <section class="card">
-                    <h2 class="card-title">Student Appointment Requests</h2>
+                    <h2 class="card-title">Student Bookings</h2>
 
                     <div class="table-container">
                         <table class="data-table">
@@ -137,6 +138,37 @@
                                             User student = studentMap.get(
                                                     booking.getUserId()
                                             );
+
+                                            String status = booking.getBookingStatus();
+                                            String statusText = status;
+                                            String statusClass = "badge-pending";
+
+                                            if ("APPROVED".equalsIgnoreCase(status)) {
+                                                statusClass = "badge-approved";
+
+                                            } else if ("REJECTED".equalsIgnoreCase(status)) {
+                                                statusClass = "badge-rejected";
+
+                                            } else if ("COMPLETED".equalsIgnoreCase(status)) {
+                                                statusClass = "badge-completed";
+
+                                            } else if ("CANCELLED".equalsIgnoreCase(status)) {
+                                                statusClass = "badge-cancelled";
+
+                                                String cancelledBy = booking.getCancelledBy();
+
+                                                if (cancelledBy != null
+                                                        && !cancelledBy.trim().isEmpty()) {
+
+                                                    if ("COUNSELOR".equalsIgnoreCase(
+                                                            cancelledBy)) {
+                                                        cancelledBy = "COUNSELLOR";
+                                                    }
+
+                                                    statusText = "CANCELLED BY "
+                                                            + cancelledBy;
+                                                }
+                                            }
                                 %>
 
                                 <tr>
@@ -167,26 +199,15 @@
                                     </td>
 
                                     <td>
-                                        <% if ("APPROVED".equalsIgnoreCase(
-                                                    booking.getBookingStatus())) { %>
-
-                                        <span class="badge badge-approved">
-                                            APPROVED
+                                        <span class="badge <%= statusClass%>">
+                                            <%= statusText%>
                                         </span>
-
-                                        <% } else { %>
-
-                                        <span class="badge badge-pending">
-                                            PENDING
-                                        </span>
-
-                                        <% } %>
                                     </td>
 
                                     <td>
                                         <div class="action-group">
 
-                                            <% if ("PENDING".equalsIgnoreCase(booking.getBookingStatus())) {%>
+                                            <% if ("PENDING".equalsIgnoreCase(status)) {%>
 
                                             <a class="primary-button"
                                                href="<%= request.getContextPath()%>/BookingServlet?action=approve&id=<%= booking.getBookingId()%>"
@@ -194,26 +215,28 @@
                                                 Approve
                                             </a>
 
-                                            <% } %>
+                                            <a class="secondary-button"
+                                               href="<%= request.getContextPath()%>/RejectBookingServlet?id=<%= booking.getBookingId()%>"
+                                               onclick="return confirm('Reject this booking and release the slot?');">
+                                                Reject
+                                            </a>
 
-                                            <% if ("APPROVED".equalsIgnoreCase(booking.getBookingStatus())) {%>
+                                            <% } else if ("APPROVED".equalsIgnoreCase(status)) {%>
 
                                             <a class="primary-button"
                                                href="<%= request.getContextPath()%>/SessionRecordServlet?action=new&bookingId=<%= booking.getBookingId()%>">
                                                 Record Session
                                             </a>
 
-                                            <% }%>
-
                                             <% if (booking.getGoogleEventLink() != null
-                                                        && !booking.getGoogleEventLink().trim().isEmpty()
-                                                        && !"CANCELLED".equalsIgnoreCase(booking.getBookingStatus())
-                                                        && "SYNCED".equalsIgnoreCase(
-                                                                booking.getCalendarSyncStatus())) {%>
+                                                            && !booking.getGoogleEventLink().trim().isEmpty()
+                                                            && "SYNCED".equalsIgnoreCase(
+                                                                    booking.getCalendarSyncStatus())) {%>
 
                                             <a class="secondary-button"
                                                href="<%= booking.getGoogleEventLink()%>"
-                                               target="_blank">
+                                               target="_blank"
+                                               rel="noopener">
                                                 Open Calendar Event
                                             </a>
 
@@ -221,20 +244,25 @@
 
                                             <a class="danger-button"
                                                href="<%= request.getContextPath()%>/CancelBookingServlet?id=<%= booking.getBookingId()%>"
-                                               onclick="return confirm('Cancel this booking and reopen the slot?');">
+                                               onclick="return confirm('Cancel this approved booking?');">
                                                 Cancel
                                             </a>
 
+                                            <% } else { %>
+
+                                            <span>-</span>
+
+                                            <% } %>
                                         </div>
                                     </td>
                                 </tr>
 
                                 <%  }
-                                } else { %>
+                            } else { %>
 
                                 <tr>
                                     <td colspan="7" class="empty-state">
-                                        No booking requests have been assigned to you.
+                                        No bookings have been assigned to you.
                                     </td>
                                 </tr>
 

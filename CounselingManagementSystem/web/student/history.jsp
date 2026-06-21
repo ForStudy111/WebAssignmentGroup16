@@ -76,7 +76,7 @@
                     </li>
 
                     <li>
-                        <a href="<%= request.getContextPath()%>/SessionRecordServlet?action=studentHistory">
+                        <a href="<%= request.getContextPath()%>/SessionRecordServlet?action=myHistory">
                             Session History
                         </a>
                     </li>
@@ -101,7 +101,7 @@
                 <div class="page-header">
                     <div>
                         <h1>My Bookings</h1>
-                        <p>View, cancel, or open your counselling appointment.</p>
+                        <p>View your counselling appointment status and history.</p>
                     </div>
 
                     <a class="primary-button"
@@ -148,16 +148,41 @@
                                                     : null;
 
                                             String status = booking.getBookingStatus();
+                                            String statusText = status;
                                             String statusClass = "badge-pending";
 
-                                            if ("APPROVED".equalsIgnoreCase(status)) {
+                                            if ("PENDING".equalsIgnoreCase(status)) {
+                                                statusText = "Pending";
+
+                                            } else if ("APPROVED".equalsIgnoreCase(status)) {
+                                                statusText = "Approved";
                                                 statusClass = "badge-approved";
 
+                                            } else if ("REJECTED".equalsIgnoreCase(status)) {
+                                                statusText = "Rejected";
+                                                statusClass = "badge-rejected";
+
                                             } else if ("COMPLETED".equalsIgnoreCase(status)) {
+                                                statusText = "Completed";
                                                 statusClass = "badge-completed";
 
                                             } else if ("CANCELLED".equalsIgnoreCase(status)) {
                                                 statusClass = "badge-cancelled";
+
+                                                String cancelledBy = booking.getCancelledBy();
+
+                                                if ("COUNSELOR".equalsIgnoreCase(cancelledBy)) {
+                                                    cancelledBy = "Counsellor";
+                                                } else if ("STUDENT".equalsIgnoreCase(cancelledBy)) {
+                                                    cancelledBy = "Student";
+                                                } else if ("ADMIN".equalsIgnoreCase(cancelledBy)) {
+                                                    cancelledBy = "Admin";
+                                                }
+
+                                                statusText = cancelledBy != null
+                                                        && !cancelledBy.trim().isEmpty()
+                                                        ? "Cancelled by " + cancelledBy
+                                                        : "Cancelled";
                                             }
                                 %>
 
@@ -184,16 +209,18 @@
 
                                     <td>
                                         <span class="badge <%= statusClass%>">
-                                            <%= status%>
+                                            <%= statusText%>
                                         </span>
                                     </td>
 
                                     <td>
-                                        <% if (booking.getGoogleEventLink() != null
-                                                    && !booking.getGoogleEventLink().trim().isEmpty()
+                                        <% if ("APPROVED".equalsIgnoreCase(status)
                                                     && "SYNCED".equalsIgnoreCase(
-                                                            booking.getCalendarSyncStatus())
-                                                    && !"CANCELLED".equalsIgnoreCase(status)) {%>
+                                                            booking.getCalendarSyncStatus()
+                                                    )
+                                                    && booking.getGoogleEventLink() != null
+                                                    && !booking.getGoogleEventLink()
+                                                            .trim().isEmpty()) {%>
 
                                         <a class="secondary-button"
                                            href="<%= booking.getGoogleEventLink()%>"
@@ -203,9 +230,7 @@
                                         </a>
 
                                         <% } else { %>
-
-                                        <span>-</span>
-
+                                        -
                                         <% } %>
                                     </td>
 
@@ -215,14 +240,12 @@
 
                                         <a class="danger-button"
                                            href="<%= request.getContextPath()%>/CancelBookingServlet?id=<%= booking.getBookingId()%>"
-                                           onclick="return confirm('Cancel this booking? The schedule slot will become available again.');">
+                                           onclick="return confirm('Cancel this booking?');">
                                             Cancel Booking
                                         </a>
 
                                         <% } else { %>
-
-                                        <span>-</span>
-
+                                        -
                                         <% } %>
                                     </td>
                                 </tr>
