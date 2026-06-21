@@ -1,0 +1,226 @@
+<%-- 
+    Document   : user-form
+    Created on : Jun 21, 2026, 4:29:10 AM
+    Author     : wpy92
+--%>
+
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@page import="com.counseling.model.User"%>
+
+<%
+    User currentUser = (User) session.getAttribute("currentUser");
+
+    if (currentUser == null
+            || !"ADMIN".equalsIgnoreCase(currentUser.getRole())) {
+
+        response.sendRedirect(
+                request.getContextPath()
+                + "/login.jsp?error=true&msg=Please+log+in+as+an+admin."
+        );
+        return;
+    }
+
+    String formMode = (String) request.getAttribute("formMode");
+    User selectedUser = (User) request.getAttribute("selectedUser");
+
+    boolean isEdit = "edit".equals(formMode);
+
+    String pageTitle = isEdit ? "Edit User" : "Add User";
+    String action = isEdit ? "update" : "create";
+
+    String message = request.getParameter("msg");
+%>
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title><%= pageTitle%> | Counseling System</title>
+
+        <link rel="stylesheet" href="<%= request.getContextPath() %>/css/admin.css">
+
+    </head>
+
+    <body class="dashboard-page">
+        <div class="dashboard-layout">
+
+            <aside class="sidebar">
+                <h2 class="sidebar-brand">Admin Portal</h2>
+
+                <ul class="sidebar-menu">
+                    <li>
+                        <a href="<%= request.getContextPath()%>/admin/dashboard.jsp">
+                            Dashboard
+                        </a>
+                    </li>
+
+                    <li>
+                        <a class="active"
+                           href="<%= request.getContextPath()%>/UserServlet?action=list">
+                            Manage Users
+                        </a>
+                    </li>
+
+                    <li>
+                        <a href="#">Manage Counsellors</a>
+                    </li>
+
+                    <li>
+                        <a href="<%= request.getContextPath()%>/admin/bookings.jsp">
+                            View Bookings
+                        </a>
+                    </li>
+
+                    <li>
+                        <a href="<%= request.getContextPath()%>/UserServlet?action=profile">
+                            My Profile
+                        </a>
+                    </li>
+
+                    <li>
+                        <a class="logout-link"
+                           href="<%= request.getContextPath()%>/LogoutServlet">
+                            Logout
+                        </a>
+                    </li>
+                </ul>
+            </aside>
+
+            <main class="main-content">
+
+                <div class="page-header">
+                    <div>
+                        <h1><%= pageTitle%></h1>
+                        <p>
+                            <%= isEdit
+                                    ? "Update the selected user account."
+                                    : "Create a new student or administrator account."%>
+                        </p>
+                    </div>
+                </div>
+
+                <% if (message != null && !message.trim().isEmpty()) {%>
+                <div class="message-error">
+                    <%= message%>
+                </div>
+                <% }%>
+
+                <section class="card">
+                    <form action="<%= request.getContextPath()%>/UserServlet"
+                          method="post"
+                          onsubmit="return validateUserForm();">
+
+                        <input type="hidden" name="action" value="<%= action%>">
+
+                        <% if (isEdit) {%>
+                        <input type="hidden" name="userId"
+                               value="<%= selectedUser.getUserId()%>">
+                        <% }%>
+
+                        <div class="form-grid">
+
+                            <div class="form-group">
+                                <label for="fullName">Full Name *</label>
+                                <input type="text"
+                                       id="fullName"
+                                       name="fullName"
+                                       required
+                                       value="<%= isEdit ? selectedUser.getFullName() : ""%>">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="username">Username *</label>
+                                <input type="text"
+                                       id="username"
+                                       name="username"
+                                       required
+                                       value="<%= isEdit ? selectedUser.getUsername() : ""%>">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="email">Email *</label>
+                                <input type="email"
+                                       id="email"
+                                       name="email"
+                                       required
+                                       value="<%= isEdit ? selectedUser.getEmail() : ""%>">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="phoneNumber">Phone Number</label>
+                                <input type="tel"
+                                       id="phoneNumber"
+                                       name="phoneNumber"
+                                       value="<%= isEdit && selectedUser.getPhoneNumber() != null
+                                               ? selectedUser.getPhoneNumber()
+                                               : ""%>">
+                            </div>
+
+                            <% if (!isEdit) { %>
+                            <div class="form-group">
+                                <label for="password">Password *</label>
+                                <input type="password"
+                                       id="password"
+                                       name="password"
+                                       minlength="6"
+                                       required>
+                            </div>
+                            <% }%>
+
+                            <div class="form-group">
+                                <label for="role">Role *</label>
+
+                                <select id="role" name="role" required>
+                                    <option value="">Select role</option>
+
+                                    <option value="STUDENT"
+                                            <%= isEdit && "STUDENT".equalsIgnoreCase(selectedUser.getRole())
+                                            ? "selected" : ""%>>
+                                        Student
+                                    </option>
+
+                                    <option value="ADMIN"
+                                            <%= isEdit && "ADMIN".equalsIgnoreCase(selectedUser.getRole())
+                                            ? "selected" : ""%>>
+                                        Admin
+                                    </option>
+                                </select>
+                            </div>
+
+                        </div>
+
+                        <% if (isEdit) { %>
+                        <p style="margin-top: 16px; color: #718096; font-size: 13px;">
+                            Password changes will be handled separately later.
+                        </p>
+                        <% }%>
+
+                        <div class="form-actions">
+                            <button type="submit" class="primary-button">
+                                <%= isEdit ? "Update User" : "Create User"%>
+                            </button>
+
+                            <a class="secondary-button"
+                               href="<%= request.getContextPath()%>/UserServlet?action=list">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </section>
+            </main>
+        </div>
+
+        <script>
+            function validateUserForm() {
+                const email = document.getElementById("email").value.trim();
+
+                if (!email.includes("@")) {
+                    alert("Please enter a valid email address.");
+                    return false;
+                }
+
+                return true;
+            }
+        </script>
+    </body>
+</html>
