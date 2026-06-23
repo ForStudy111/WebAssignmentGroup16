@@ -1,0 +1,20 @@
+/*
+Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/CascadeStyleSheet.css to edit this template
+*/
+/* 
+    Created on : Jun 21, 2026, 4:21:37 PM
+    Author     : wpy92
+/* Used by js/validation.js */
+.input-error {
+    border: 1px solid #c0392b !important;
+    outline: none;
+}
+
+.field-error {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.85rem;
+    color: #c0392b;
+}
+
