@@ -88,7 +88,7 @@
 
                     <p>
                         View counsellor availability, book a suitable session,
-                        manage your appointments, and submit feedback after a
+                        manage your appointments and submit feedback after a
                         completed session.
                     </p>
 

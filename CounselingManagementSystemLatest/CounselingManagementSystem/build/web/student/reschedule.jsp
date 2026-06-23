@@ -5,6 +5,9 @@
 <%@page import="com.counseling.model.Counsellor"%>
 <%@page import="java.util.List"%>
 <%@page import="java.util.Map"%>
+<%@page import="java.time.LocalDate"%>
+<%@page import="java.time.LocalTime"%>
+<%@page import="java.time.format.DateTimeFormatter"%>
 
 <%
     User currentUser = (User) session.getAttribute("currentUser");
@@ -37,6 +40,12 @@
     }
 
     String message = request.getParameter("msg");
+
+    DateTimeFormatter dateFormatter
+            = DateTimeFormatter.ofPattern("EEE, MMM dd");
+
+    DateTimeFormatter timeFormatter
+            = DateTimeFormatter.ofPattern("hh:mm a");
 %>
 
 <!DOCTYPE html>
@@ -163,19 +172,55 @@
                                         Counsellor counsellor = counsellorMap.get(
                                                 schedule.getCounsellorId()
                                         );
+
+                                        String displayOption = "";
+
+                                        try {
+                                            LocalDate date = LocalDate.parse(
+                                                    schedule.getAvailableDate().toString()
+                                            );
+
+                                            LocalTime startTime = LocalTime.parse(
+                                                    schedule.getAvailableTime().toString()
+                                            );
+
+                                            LocalTime endTime = startTime.plusHours(1);
+
+                                            String counsellorName = counsellor != null
+                                                    && counsellor.getCounsellorName() != null
+                                                    ? counsellor.getCounsellorName()
+                                                    : "Counsellor";
+
+                                            String specialization = counsellor != null
+                                                    && counsellor.getSpecialization() != null
+                                                    ? counsellor.getSpecialization()
+                                                    : "";
+
+                                            displayOption = date.format(dateFormatter)
+                                                    + " | "
+                                                    + startTime.format(timeFormatter)
+                                                    + " - "
+                                                    + endTime.format(timeFormatter)
+                                                    + " | "
+                                                    + counsellorName;
+
+                                            if (!specialization.trim().isEmpty()) {
+                                                displayOption += " - " + specialization;
+                                            }
+
+                                        } catch (Exception e) {
+                                            displayOption = schedule.getAvailableDate()
+                                                    + " | "
+                                                    + schedule.getAvailableTime()
+                                                    + " | "
+                                                    + (counsellor != null
+                                                            ? counsellor.getCounsellorName()
+                                                            : "Counsellor");
+                                        }
                                 %>
 
                                 <option value="<%= schedule.getScheduleId()%>">
-                                    <%= schedule.getAvailableDate()%>
-                                    |
-                                    <%= schedule.getAvailableTime()%>
-                                    |
-                                    <%= counsellor != null
-                                            ? counsellor.getCounsellorName()
-                                            : "Counsellor"%>
-                                    <%= counsellor != null
-                                            ? "- " + counsellor.getSpecialization()
-                                            : ""%>
+                                    <%= displayOption%>
                                 </option>
 
                                 <% }%>

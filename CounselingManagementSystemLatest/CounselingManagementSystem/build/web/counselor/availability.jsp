@@ -2,11 +2,15 @@
 <%@page import="com.counseling.model.User"%>
 <%@page import="com.counseling.model.Schedule"%>
 <%@page import="java.util.List"%>
+<%@page import="java.time.LocalDate"%>
+<%@page import="java.time.LocalTime"%>
+<%@page import="java.time.format.DateTimeFormatter"%>
 
 <%
     User currentUser = (User) session.getAttribute("currentUser");
 
-    if (currentUser == null || !"COUNSELOR".equalsIgnoreCase(currentUser.getRole())) {
+    if (currentUser == null
+            || !"COUNSELOR".equalsIgnoreCase(currentUser.getRole())) {
 
         response.sendRedirect(
                 request.getContextPath()
@@ -15,7 +19,8 @@
         return;
     }
 
-    List<Schedule> scheduleList = (List<Schedule>) request.getAttribute("scheduleList");
+    List<Schedule> scheduleList
+            = (List<Schedule>) request.getAttribute("scheduleList");
 
     if (scheduleList == null) {
         response.sendRedirect(
@@ -26,6 +31,16 @@
     }
 
     String message = request.getParameter("msg");
+
+    LocalDate today = LocalDate.now();
+    DateTimeFormatter dayFormatter
+            = DateTimeFormatter.ofPattern("EEE");
+    DateTimeFormatter dateFormatter
+            = DateTimeFormatter.ofPattern("dd MMM");
+    DateTimeFormatter longDateFormatter
+            = DateTimeFormatter.ofPattern("EEEE, dd MMMM yyyy");
+    DateTimeFormatter timeFormatter
+            = DateTimeFormatter.ofPattern("hh:mm a");
 %>
 
 <!DOCTYPE html>
@@ -34,7 +49,97 @@
         <meta charset="UTF-8">
         <title>Manage Availability | Counseling System</title>
 
-        <link rel="stylesheet" href="<%= request.getContextPath()%>/css/counselor.css">
+        <link rel="stylesheet"
+              href="<%= request.getContextPath()%>/css/counselor.css">
+
+        <style>
+            .weekly-card-grid {
+                display: grid;
+                grid-template-columns: repeat(7, minmax(180px, 1fr));
+                gap: 16px;
+                overflow-x: auto;
+                padding-bottom: 8px;
+            }
+
+            .day-card {
+                min-width: 180px;
+                padding: 18px;
+                border: 1px solid #d9e8e6;
+                border-top: 4px solid #14866d;
+                border-radius: 12px;
+                background: #ffffff;
+                box-shadow: 0 5px 14px rgba(25, 77, 70, 0.08);
+            }
+
+            .day-card.is-today {
+                background: #f2fffa;
+                border-top-color: #00aa72;
+            }
+
+            .day-card-header {
+                margin-bottom: 14px;
+            }
+
+            .day-card-day {
+                margin: 0;
+                color: #0a5e50;
+                font-size: 19px;
+                font-weight: 700;
+            }
+
+            .day-card-date {
+                margin: 4px 0 0;
+                color: #6a8380;
+                font-size: 13px;
+            }
+
+            .slot-count {
+                display: inline-block;
+                margin: 0 0 12px;
+                padding: 4px 8px;
+                border-radius: 999px;
+                color: #0a745f;
+                background: #e6f7f1;
+                font-size: 12px;
+                font-weight: 700;
+            }
+
+            .slot-preview {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                min-height: 150px;
+                margin-bottom: 16px;
+            }
+
+            .slot-preview-item {
+                padding: 8px 9px;
+                border-radius: 7px;
+                color: #355f59;
+                background: #f2f7f6;
+                font-size: 12px;
+                font-weight: 600;
+            }
+
+            .slot-preview-item.booked {
+                color: #74520d;
+                background: #fff4cf;
+            }
+
+            .no-slots {
+                margin: 0;
+                color: #7a8c89;
+                font-size: 13px;
+                line-height: 1.5;
+            }
+
+            .day-card .secondary-button {
+                display: block;
+                width: 100%;
+                box-sizing: border-box;
+                text-align: center;
+            }
+        </style>
     </head>
 
     <body class="dashboard-page">
@@ -85,11 +190,10 @@
             </aside>
 
             <main class="main-content">
-
                 <div class="page-header">
                     <div>
                         <h1>Manage Availability</h1>
-                        <p>Create and manage the time slots students can book.</p>
+                        <p>View your availability for today and the next six days.</p>
                     </div>
 
                     <a class="primary-button"
@@ -102,91 +206,95 @@
                 <div class="message-success">
                     <%= message%>
                 </div>
-                <% } %>
+                <% }%>
 
                 <section class="card">
-                    <h2 class="card-title">My Schedule Slots</h2>
+                    <h2 class="card-title">Weekly Availability</h2>
 
-                    <div class="table-container">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Date</th>
-                                    <th>Time</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
+                    <div class="weekly-card-grid">
+                        <% for (int dayOffset = 0; dayOffset < 7; dayOffset++) {
+                                LocalDate cardDate = today.plusDays(dayOffset);
+                                String dateValue = cardDate.toString();
+                                int slotCount = 0;
 
-                            <tbody>
-                                <% if (!scheduleList.isEmpty()) {
-                                        for (Schedule schedule : scheduleList) {%>
+                                for (Schedule schedule : scheduleList) {
+                                    if (dateValue.equals(
+                                            schedule.getAvailableDate().toString())) {
+                                        slotCount++;
+                                    }
+                                }
+                        %>
 
-                                <tr>
-                                    <td><%= schedule.getScheduleId()%></td>
-                                    <td><%= schedule.getAvailableDate()%></td>
-                                    <td><%= schedule.getAvailableTime()%></td>
+                        <article class="day-card <%= dayOffset == 0
+                                ? "is-today"
+                                : ""%>">
 
-                                    <td>
-                                        <% if ("AVAILABLE".equalsIgnoreCase(
-                                                    schedule.getAvailabilityStatus())) { %>
+                            <div class="day-card-header">
+                                <h3 class="day-card-day">
+                                    <%= dayOffset == 0
+                                            ? "Today"
+                                            : cardDate.format(dayFormatter)%>
+                                </h3>
 
-                                        <span class="badge badge-available">
-                                            AVAILABLE
-                                        </span>
+                                <p class="day-card-date">
+                                    <%= cardDate.format(dateFormatter)%>
+                                </p>
+                            </div>
 
-                                        <% } else if ("BOOKED".equalsIgnoreCase(
-                                                schedule.getAvailabilityStatus())) { %>
+                            <span class="slot-count">
+                                <%= slotCount%>
+                                <%= slotCount == 1 ? "slot" : "slots"%>
+                            </span>
 
-                                        <span class="badge badge-booked">
-                                            BOOKED
-                                        </span>
+                            <div class="slot-preview">
+                                <% if (slotCount == 0) {%>
 
-                                        <% } else { %>
+                                <p class="no-slots">
+                                    No availability created yet.
+                                </p>
 
-                                        <span class="badge badge-unavailable">
-                                            UNAVAILABLE
-                                        </span>
+                                <% } else {
+                                    for (Schedule schedule : scheduleList) {
+                                        if (dateValue.equals(
+                                                schedule.getAvailableDate()
+                                                        .toString())) {
 
-                                        <% } %>
-                                    </td>
+                                            LocalTime startTime
+                                                    = schedule.getAvailableTime()
+                                                            .toLocalTime();
 
-                                    <td>
-                                        <div class="action-group">
-                                            <% if (!"BOOKED".equalsIgnoreCase(
-                                                        schedule.getAvailabilityStatus())) {%>
+                                            String statusClass
+                                                    = "BOOKED".equalsIgnoreCase(
+                                                            schedule.getAvailabilityStatus()
+                                                    )
+                                                    ? "booked"
+                                                    : "";
+                                %>
 
-                                            <a class="secondary-button"
-                                               href="<%= request.getContextPath()%>/ScheduleServlet?action=edit&id=<%= schedule.getScheduleId()%>">
-                                                Edit
-                                            </a>
+                                <div class="slot-preview-item <%= statusClass%>">
+                                    <%= startTime.format(timeFormatter)%>
+                                    -
+                                    <%= startTime.plusHours(1)
+                                                    .format(timeFormatter)%>
+                                    <br>
+                                    <small>
+                                        <%= schedule.getAvailabilityStatus()%>
+                                    </small>
+                                </div>
 
-                                            <a class="danger-button"
-                                               href="<%= request.getContextPath()%>/ScheduleServlet?action=delete&id=<%= schedule.getScheduleId()%>"
-                                               onclick="return confirm('Delete this availability slot?');">
-                                                Delete
-                                            </a>
+                                <%      }
+                                        }
+                                    }%>
+                            </div>
 
-                                            <% } else { %>
-                                            <span>-</span>
-                                            <% } %>
-                                        </div>
-                                    </td>
-                                </tr>
+                            <a class="secondary-button"
+                               href="<%= request.getContextPath()%>/ScheduleServlet?action=details&date=<%= dateValue%>"
+                               title="<%= cardDate.format(longDateFormatter)%>">
+                                Details
+                            </a>
+                        </article>
 
-                                <%  }
-                                } else { %>
-
-                                <tr>
-                                    <td colspan="5" class="empty-state">
-                                        No availability slots have been created yet.
-                                    </td>
-                                </tr>
-
-                                <% }%>
-                            </tbody>
-                        </table>
+                        <% }%>
                     </div>
                 </section>
             </main>

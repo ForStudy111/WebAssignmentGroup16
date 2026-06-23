@@ -76,7 +76,7 @@
                     </li>
 
                     <li>
-                        <a href="<%= request.getContextPath()%>/SessionRecordServlet?action=myHistory">
+                        <a href="<%= request.getContextPath()%>/SessionRecordServlet?action=studentHistory">
                             Session History
                         </a>
                     </li>
@@ -114,7 +114,7 @@
                 <div class="message-success">
                     <%= message%>
                 </div>
-                <% } %>
+                <% }%>
 
                 <section class="card">
                     <h2 class="card-title">Counselling Appointments</h2>
@@ -124,7 +124,7 @@
                             <thead>
                                 <tr>
                                     <th>Booking ID</th>
-                                    <th>Counsellor</th>
+                                    <th>Counsellor & Location</th>
                                     <th>Date</th>
                                     <th>Time</th>
                                     <th>Status</th>
@@ -173,8 +173,10 @@
 
                                                 if ("COUNSELOR".equalsIgnoreCase(cancelledBy)) {
                                                     cancelledBy = "Counsellor";
+
                                                 } else if ("STUDENT".equalsIgnoreCase(cancelledBy)) {
                                                     cancelledBy = "Student";
+
                                                 } else if ("ADMIN".equalsIgnoreCase(cancelledBy)) {
                                                     cancelledBy = "Admin";
                                                 }
@@ -184,15 +186,28 @@
                                                         ? "Cancelled by " + cancelledBy
                                                         : "Cancelled";
                                             }
+
+                                            String counsellorName = counsellor != null
+                                                    && counsellor.getCounsellorName() != null
+                                                    ? counsellor.getCounsellorName()
+                                                    : "-";
+
+                                            String officeLocation = counsellor != null
+                                                    && counsellor.getOfficeLocation() != null
+                                                    && !counsellor.getOfficeLocation().trim().isEmpty()
+                                                    ? counsellor.getOfficeLocation()
+                                                    : "-";
                                 %>
 
                                 <tr>
                                     <td><%= booking.getBookingId()%></td>
 
                                     <td>
-                                        <%= counsellor != null
-                                                ? counsellor.getCounsellorName()
-                                                : "-"%>
+                                        <strong><%= counsellorName%></strong>
+                                        <br>
+                                        <small>
+                                            Location: <%= officeLocation%>
+                                        </small>
                                     </td>
 
                                     <td>
@@ -231,12 +246,24 @@
 
                                         <% } else { %>
                                         -
-                                        <% } %>
+                                        <% }%>
                                     </td>
 
                                     <td>
-                                        <% if ("PENDING".equalsIgnoreCase(status)
-                                                    || "APPROVED".equalsIgnoreCase(status)) {%>
+                                        <% if ("PENDING".equalsIgnoreCase(status)) {%>
+
+                                        <a class="secondary-button"
+                                           href="<%= request.getContextPath()%>/BookingServlet?action=reschedule&id=<%= booking.getBookingId()%>">
+                                            Reschedule
+                                        </a>
+
+                                        <a class="danger-button"
+                                           href="<%= request.getContextPath()%>/CancelBookingServlet?id=<%= booking.getBookingId()%>"
+                                           onclick="return confirm('Cancel this booking?');">
+                                            Cancel Booking
+                                        </a>
+
+                                        <% } else if ("APPROVED".equalsIgnoreCase(status)) {%>
 
                                         <a class="danger-button"
                                            href="<%= request.getContextPath()%>/CancelBookingServlet?id=<%= booking.getBookingId()%>"
@@ -246,12 +273,12 @@
 
                                         <% } else { %>
                                         -
-                                        <% } %>
+                                        <% }%>
                                     </td>
                                 </tr>
 
                                 <%  }
-                            } else { %>
+                            } else {%>
 
                                 <tr>
                                     <td colspan="7" class="empty-state">

@@ -71,7 +71,7 @@
                     <input type="tel"
                            id="phoneNumber"
                            name="phoneNumber"
-                           placeholder="Example: 0123456789"
+                           placeholder="Example: 012-3456789"
                            data-label="Phone number"
                            data-validation="phone">
                 </div>
