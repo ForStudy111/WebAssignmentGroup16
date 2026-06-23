@@ -230,22 +230,54 @@ public class UserServlet extends HttpServlet {
         }
     }
 
-    private void updateOwnProfile(HttpServletRequest request, HttpServletResponse response, User currentUser) throws IOException {
-        currentUser.setUsername(getValue(request, "username"));
+    private void updateOwnProfile(HttpServletRequest request,
+            HttpServletResponse response,
+            User currentUser) throws IOException {
+
+        User savedUser = userDAO.getUserById(currentUser.getUserId());
+
+        if (savedUser == null) {
+            redirectWithMessage(request, response,
+                    "/UserServlet?action=profile",
+                    "Your user account could not be found.");
+            return;
+        }
+
+        /*
+     Keep username and role from the database.
+     A user may update only their own personal details.
+         */
+        currentUser.setUsername(savedUser.getUsername());
+        currentUser.setRole(savedUser.getRole());
+
         currentUser.setFullName(getValue(request, "fullName"));
         currentUser.setEmail(getValue(request, "email"));
         currentUser.setPhoneNumber(getValue(request, "phoneNumber"));
-        if (currentUser.getUsername().isEmpty() || currentUser.getFullName().isEmpty() || currentUser.getEmail().isEmpty()) {
-            redirectWithMessage(request, response, "/UserServlet?action=profile", "Please complete all required fields.");
+
+        if (currentUser.getFullName().isEmpty()
+                || currentUser.getEmail().isEmpty()
+                || currentUser.getPhoneNumber().isEmpty()) {
+
+            redirectWithMessage(request, response,
+                    "/UserServlet?action=profile",
+                    "Please complete all required fields.");
             return;
         }
+
         if (userDAO.updateUser(currentUser)) {
             HttpSession session = request.getSession();
+
             session.setAttribute("currentUser", currentUser);
             session.setAttribute("user", currentUser.getUsername());
-            redirectWithMessage(request, response, "/UserServlet?action=profile", "Profile updated successfully.");
+
+            redirectWithMessage(request, response,
+                    "/UserServlet?action=profile",
+                    "Profile updated successfully.");
+
         } else {
-            redirectWithMessage(request, response, "/UserServlet?action=profile", "Profile update failed.");
+            redirectWithMessage(request, response,
+                    "/UserServlet?action=profile",
+                    "Profile update failed. Email may already exist.");
         }
     }
 

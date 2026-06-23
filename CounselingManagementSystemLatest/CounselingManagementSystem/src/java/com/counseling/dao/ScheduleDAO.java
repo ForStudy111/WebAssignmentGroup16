@@ -1,13 +1,5 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.counseling.dao;
 
-/**
- *
- * @author wpy92
- */
 import com.counseling.model.DBConnection;
 import com.counseling.model.Schedule;
 import java.sql.Connection;
@@ -38,9 +30,8 @@ public class ScheduleDAO {
 
         } catch (SQLException e) {
             e.printStackTrace();
+            return false;
         }
-
-        return false;
     }
 
     // READ: all schedules
@@ -63,7 +54,7 @@ public class ScheduleDAO {
         return scheduleList;
     }
 
-    // READ: available schedules for student booking
+    // READ: schedules available for student booking
     public List<Schedule> getAvailableSchedules() {
         List<Schedule> scheduleList = new ArrayList<>();
 
@@ -130,6 +121,47 @@ public class ScheduleDAO {
         return null;
     }
 
+    /*
+     * Each schedule represents one hour.
+     *
+     * Two slots overlap when:
+     * existing start time < candidate end time
+     * AND existing end time > candidate start time
+     *
+     * excludeScheduleId is 0 for a new schedule.
+     * For edit, it excludes the slot currently being edited.
+     */
+    public boolean hasOverlappingSchedule(int counsellorId,
+            Date availableDate,
+            Time availableTime,
+            int excludeScheduleId) {
+
+        String sql = "SELECT 1 FROM schedules "
+                + "WHERE counsellor_id = ? "
+                + "AND available_date = ? "
+                + "AND schedule_id <> ? "
+                + "AND available_time < ADDTIME(?, '01:00:00') "
+                + "AND ADDTIME(available_time, '01:00:00') > ? "
+                + "LIMIT 1";
+
+        try (Connection con = DBConnection.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, counsellorId);
+            ps.setDate(2, availableDate);
+            ps.setInt(3, excludeScheduleId);
+            ps.setTime(4, availableTime);
+            ps.setTime(5, availableTime);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return true;
+        }
+    }
+
     // UPDATE date, time, or status
     public boolean updateSchedule(Schedule schedule) {
         String sql = "UPDATE schedules SET "
@@ -147,12 +179,11 @@ public class ScheduleDAO {
 
         } catch (SQLException e) {
             e.printStackTrace();
+            return false;
         }
-
-        return false;
     }
 
-    // Used by BookingDAO when a student books or cancels a slot
+    // Used by booking functions when a student books, cancels, or reschedules.
     public boolean updateScheduleStatus(int scheduleId, String status) {
         String sql = "UPDATE schedules SET availability_status = ? "
                 + "WHERE schedule_id = ?";
@@ -166,9 +197,8 @@ public class ScheduleDAO {
 
         } catch (SQLException e) {
             e.printStackTrace();
+            return false;
         }
-
-        return false;
     }
 
     // DELETE
@@ -183,9 +213,8 @@ public class ScheduleDAO {
 
         } catch (SQLException e) {
             e.printStackTrace();
+            return false;
         }
-
-        return false;
     }
 
     private Schedule mapSchedule(ResultSet rs) throws SQLException {

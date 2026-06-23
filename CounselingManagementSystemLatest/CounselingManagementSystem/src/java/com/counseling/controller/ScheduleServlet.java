@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Servlet.java to edit this template
- */
 package com.counseling.controller;
 
 import com.counseling.dao.CounsellorDAO;
@@ -10,12 +6,15 @@ import com.counseling.model.Counsellor;
 import com.counseling.model.Schedule;
 import com.counseling.model.User;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.net.URLEncoder;
 import java.sql.Date;
 import java.sql.Time;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -23,54 +22,17 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-/**
- *
- * @author wpy92
- */
 @WebServlet("/ScheduleServlet")
 public class ScheduleServlet extends HttpServlet {
 
     private final ScheduleDAO scheduleDAO = new ScheduleDAO();
     private final CounsellorDAO counsellorDAO = new CounsellorDAO();
 
-    /**
-     * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
-     * methods.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
-    protected void processRequest(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        response.setContentType("text/html;charset=UTF-8");
-        try (PrintWriter out = response.getWriter()) {
-            /* TODO output your page here. You may use following sample code. */
-            out.println("<!DOCTYPE html>");
-            out.println("<html>");
-            out.println("<head>");
-            out.println("<title>Servlet ScheduleServlet</title>");
-            out.println("</head>");
-            out.println("<body>");
-            out.println("<h1>Servlet ScheduleServlet at " + request.getContextPath() + "</h1>");
-            out.println("</body>");
-            out.println("</html>");
-        }
-    }
-
-    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
-    /**
-     * Handles the HTTP <code>GET</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+    protected void doGet(HttpServletRequest request,
+            HttpServletResponse response)
             throws ServletException, IOException {
+
         User currentUser = getCurrentUser(request);
 
         if (!isCounselor(currentUser)) {
@@ -78,8 +40,9 @@ public class ScheduleServlet extends HttpServlet {
             return;
         }
 
-        Counsellor counsellor
-                = counsellorDAO.getCounsellorByUserId(currentUser.getUserId());
+        Counsellor counsellor = counsellorDAO.getCounsellorByUserId(
+                currentUser.getUserId()
+        );
 
         if (counsellor == null) {
             redirectWithMessage(request, response,
@@ -88,19 +51,23 @@ public class ScheduleServlet extends HttpServlet {
             return;
         }
 
-        String action = request.getParameter("action");
+        String action = getValue(request, "action");
 
-        if (action == null || action.trim().isEmpty()) {
+        if (action.isEmpty()) {
             action = "list";
         }
 
         switch (action) {
             case "list":
-                showScheduleList(request, response, counsellor);
+                showWeeklyAvailability(request, response, counsellor);
+                break;
+
+            case "details":
+                showDayDetails(request, response, counsellor);
                 break;
 
             case "new":
-                showCreateForm(request, response);
+                showCreateForm(request, response, counsellor);
                 break;
 
             case "edit":
@@ -112,22 +79,19 @@ public class ScheduleServlet extends HttpServlet {
                 break;
 
             default:
-                response.sendRedirect(request.getContextPath()
-                        + "/ScheduleServlet?action=list");
+                response.sendRedirect(
+                        request.getContextPath()
+                        + "/ScheduleServlet?action=list"
+                );
+                break;
         }
     }
 
-    /**
-     * Handles the HTTP <code>POST</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+    protected void doPost(HttpServletRequest request,
+            HttpServletResponse response)
             throws ServletException, IOException {
+
         request.setCharacterEncoding("UTF-8");
 
         User currentUser = getCurrentUser(request);
@@ -137,29 +101,33 @@ public class ScheduleServlet extends HttpServlet {
             return;
         }
 
-        Counsellor counsellor
-                = counsellorDAO.getCounsellorByUserId(currentUser.getUserId());
+        Counsellor counsellor = counsellorDAO.getCounsellorByUserId(
+                currentUser.getUserId()
+        );
 
         if (counsellor == null) {
             redirectToLogin(request, response);
             return;
         }
 
-        String action = request.getParameter("action");
+        String action = getValue(request, "action");
 
         if ("create".equals(action)) {
-            createSchedule(request, response, counsellor);
+            createSchedules(request, response, counsellor);
 
         } else if ("update".equals(action)) {
             updateSchedule(request, response, counsellor);
 
         } else {
-            response.sendRedirect(request.getContextPath()
-                    + "/ScheduleServlet?action=list");
+            response.sendRedirect(
+                    request.getContextPath()
+                    + "/ScheduleServlet?action=list"
+            );
         }
     }
 
-    private void showScheduleList(HttpServletRequest request,
+    // Weekly card page: today plus the next six days.
+    private void showWeeklyAvailability(HttpServletRequest request,
             HttpServletResponse response,
             Counsellor counsellor)
             throws ServletException, IOException {
@@ -173,11 +141,51 @@ public class ScheduleServlet extends HttpServlet {
                 .forward(request, response);
     }
 
+    // Daily detail page: only slots for the selected date.
+    private void showDayDetails(HttpServletRequest request,
+            HttpServletResponse response,
+            Counsellor counsellor)
+            throws ServletException, IOException {
+
+        String dateValue = getValue(request, "date");
+
+        if (!isValidDate(dateValue)) {
+            redirectWithMessage(request, response,
+                    "/ScheduleServlet?action=list",
+                    "Please select a valid availability date.");
+            return;
+        }
+
+        Date selectedDate = Date.valueOf(dateValue);
+        List<Schedule> allSchedules = scheduleDAO.getSchedulesByCounsellorId(
+                counsellor.getCounsellorId()
+        );
+        List<Schedule> daySchedules = new ArrayList<>();
+
+        for (Schedule schedule : allSchedules) {
+            if (selectedDate.equals(schedule.getAvailableDate())) {
+                daySchedules.add(schedule);
+            }
+        }
+
+        request.setAttribute("selectedDate", dateValue);
+        request.setAttribute("scheduleList", daySchedules);
+
+        request.getRequestDispatcher("/counselor/schedule-details.jsp")
+                .forward(request, response);
+    }
+
     private void showCreateForm(HttpServletRequest request,
-            HttpServletResponse response)
+            HttpServletResponse response,
+            Counsellor counsellor)
             throws ServletException, IOException {
 
         request.setAttribute("formMode", "create");
+        request.setAttribute("returnDate", getValue(request, "returnDate"));
+        request.setAttribute("existingSchedules",
+                scheduleDAO.getSchedulesByCounsellorId(
+                        counsellor.getCounsellorId()
+                ));
 
         request.getRequestDispatcher("/counselor/schedule-form.jsp")
                 .forward(request, response);
@@ -189,7 +197,6 @@ public class ScheduleServlet extends HttpServlet {
             throws ServletException, IOException {
 
         int scheduleId = getIntParameter(request, "id");
-
         Schedule schedule = scheduleDAO.getScheduleById(scheduleId);
 
         if (schedule == null
@@ -208,82 +215,146 @@ public class ScheduleServlet extends HttpServlet {
             return;
         }
 
+        String returnDate = getValue(request, "returnDate");
+
+        if (!isValidDate(returnDate)) {
+            returnDate = schedule.getAvailableDate().toString();
+        }
+
         request.setAttribute("formMode", "edit");
         request.setAttribute("selectedSchedule", schedule);
+        request.setAttribute("returnDate", returnDate);
+        request.setAttribute("existingSchedules",
+                scheduleDAO.getSchedulesByCounsellorId(
+                        counsellor.getCounsellorId()
+                ));
 
         request.getRequestDispatcher("/counselor/schedule-form.jsp")
                 .forward(request, response);
     }
 
-    private void createSchedule(HttpServletRequest request,
+    /*
+     * Creates selected preset slots and one optional custom one-hour slot.
+     * The final DAO check prevents overlap even if JavaScript is bypassed.
+     */
+    private void createSchedules(HttpServletRequest request,
             HttpServletResponse response,
             Counsellor counsellor) throws IOException {
 
         String dateValue = getValue(request, "availableDate");
-        String[] timeValues = request.getParameterValues("availableTime");
-        String status = getValue(request, "availabilityStatus").toUpperCase();
+        String[] presetValues = request.getParameterValues("presetTime");
+        String customTimeValue = getValue(request, "customTime");
 
-        // Check if fields are empty
-        if (dateValue.isEmpty() || timeValues == null || timeValues.length == 0) {
+        if (dateValue.isEmpty()) {
             redirectWithMessage(request, response,
                     "/ScheduleServlet?action=new",
-                    "Please select a date and at least one time slot.");
+                    "Please select an available date.");
+            return;
+        }
+
+        if ((presetValues == null || presetValues.length == 0)
+                && customTimeValue.isEmpty()) {
+
+            redirectWithMessage(request, response,
+                    "/ScheduleServlet?action=new",
+                    "Please select a preset slot or enter a custom start time.");
             return;
         }
 
         try {
             LocalDate localDate = LocalDate.parse(dateValue);
+
             if (localDate.isBefore(LocalDate.now())) {
                 redirectWithMessage(request, response,
                         "/ScheduleServlet?action=new",
-                        "Please enter a valid future date.");
+                        "Please select today or a future date.");
                 return;
             }
 
-            if (!"AVAILABLE".equals(status) && !"UNAVAILABLE".equals(status)) {
-                status = "AVAILABLE";
+            Set<LocalTime> presetTimes = new LinkedHashSet<>();
+
+            if (presetValues != null) {
+                for (String presetValue : presetValues) {
+                    presetTimes.add(LocalTime.parse(presetValue));
+                }
+            }
+
+            LocalTime customTime = null;
+
+            if (!customTimeValue.isEmpty()) {
+                customTime = LocalTime.parse(customTimeValue);
+
+                if (presetTimes.contains(customTime)) {
+                    redirectWithMessage(request, response,
+                            "/ScheduleServlet?action=new",
+                            "Custom slot duplicates one of the selected preset slots.");
+                    return;
+                }
+            }
+
+            List<LocalTime> candidateTimes = new ArrayList<>(presetTimes);
+
+            if (customTime != null) {
+                candidateTimes.add(customTime);
+            }
+
+            String internalConflict = findInternalOverlap(candidateTimes);
+
+            if (internalConflict != null) {
+                redirectWithMessage(request, response,
+                        "/ScheduleServlet?action=new",
+                        internalConflict);
+                return;
+            }
+
+            Date availableDate = Date.valueOf(localDate);
+
+            for (LocalTime candidateTime : candidateTimes) {
+                if (scheduleDAO.hasOverlappingSchedule(
+                        counsellor.getCounsellorId(),
+                        availableDate,
+                        Time.valueOf(candidateTime),
+                        0)) {
+
+                    redirectWithMessage(request, response,
+                            "/ScheduleServlet?action=new",
+                            "A selected slot overlaps with an existing slot on "
+                            + localDate + ".");
+                    return;
+                }
             }
 
             int successCount = 0;
-            int failureCount = 0;
 
-            // Loop over every selected checkbox slot
-            for (String timeValue : timeValues) {
-                LocalTime localTime = LocalTime.parse(timeValue);
-
+            for (LocalTime candidateTime : candidateTimes) {
                 Schedule schedule = new Schedule(
                         counsellor.getCounsellorId(),
-                        java.sql.Date.valueOf(localDate),
-                        java.sql.Time.valueOf(localTime),
-                        status
+                        availableDate,
+                        Time.valueOf(candidateTime),
+                        "AVAILABLE"
                 );
 
                 if (scheduleDAO.addSchedule(schedule)) {
                     successCount++;
-                } else {
-                    failureCount++;
                 }
             }
 
-            // Send a detailed notice based on execution results
-            if (failureCount == 0) {
+            if (successCount == candidateTimes.size()) {
                 redirectWithMessage(request, response,
-                        "/ScheduleServlet?action=list",
-                        "Successfully created " + successCount + " availability slot(s).");
-            } else if (successCount > 0) {
-                redirectWithMessage(request, response,
-                        "/ScheduleServlet?action=list",
-                        "Created " + successCount + " slots. " + failureCount + " slots failed (duplicate entries).");
+                        "/ScheduleServlet?action=details&date=" + dateValue,
+                        "Successfully created "
+                        + successCount + " availability slot(s).");
+
             } else {
                 redirectWithMessage(request, response,
                         "/ScheduleServlet?action=new",
-                        "Schedule creation failed. Selected time slots may already exist.");
+                        "Some slots could not be created. Please try again.");
             }
 
         } catch (Exception e) {
             redirectWithMessage(request, response,
                     "/ScheduleServlet?action=new",
-                    "An invalid data format error occurred.");
+                    "Please enter a valid date and time.");
         }
     }
 
@@ -292,7 +363,6 @@ public class ScheduleServlet extends HttpServlet {
             Counsellor counsellor) throws IOException {
 
         int scheduleId = getIntParameter(request, "scheduleId");
-
         Schedule existingSchedule = scheduleDAO.getScheduleById(scheduleId);
 
         if (existingSchedule == null
@@ -305,35 +375,60 @@ public class ScheduleServlet extends HttpServlet {
             return;
         }
 
+        String returnDate = getValue(request, "returnDate");
+
+        if (!isValidDate(returnDate)) {
+            returnDate = existingSchedule.getAvailableDate().toString();
+        }
+
         if ("BOOKED".equalsIgnoreCase(
                 existingSchedule.getAvailabilityStatus())) {
 
             redirectWithMessage(request, response,
-                    "/ScheduleServlet?action=list",
+                    "/ScheduleServlet?action=details&date=" + returnDate,
                     "Booked schedules cannot be edited.");
             return;
         }
 
-        Schedule updatedSchedule
-                = createScheduleObject(request, counsellor);
+        Schedule updatedSchedule = createUpdatedSchedule(
+                request, counsellor, existingSchedule.getAvailabilityStatus()
+        );
 
         if (updatedSchedule == null) {
             redirectWithMessage(request, response,
-                    "/ScheduleServlet?action=edit&id=" + scheduleId,
-                    "Please enter a valid future date and time.");
+                    "/ScheduleServlet?action=edit&id=" + scheduleId
+                    + "&returnDate=" + returnDate,
+                    "Please enter a valid date and time.");
+            return;
+        }
+
+        if (scheduleDAO.hasOverlappingSchedule(
+                counsellor.getCounsellorId(),
+                updatedSchedule.getAvailableDate(),
+                updatedSchedule.getAvailableTime(),
+                scheduleId)) {
+
+            redirectWithMessage(request, response,
+                    "/ScheduleServlet?action=edit&id=" + scheduleId
+                    + "&returnDate=" + returnDate,
+                    "This slot overlaps with another slot on the selected date.");
             return;
         }
 
         updatedSchedule.setScheduleId(scheduleId);
 
         if (scheduleDAO.updateSchedule(updatedSchedule)) {
+            String updatedDate = updatedSchedule.getAvailableDate().toString();
+
             redirectWithMessage(request, response,
-                    "/ScheduleServlet?action=list",
+                    "/ScheduleServlet?action=details&date=" + updatedDate,
                     "Schedule updated successfully.");
+
         } else {
             redirectWithMessage(request, response,
-                    "/ScheduleServlet?action=edit&id=" + scheduleId,
-                    "Schedule update failed. This time slot may already exist.");
+                    "/ScheduleServlet?action=edit&id=" + scheduleId
+                    + "&returnDate=" + returnDate,
+                    "Schedule update failed.");
         }
     }
 
@@ -342,44 +437,58 @@ public class ScheduleServlet extends HttpServlet {
             Counsellor counsellor) throws IOException {
 
         int scheduleId = getIntParameter(request, "id");
-
         Schedule schedule = scheduleDAO.getScheduleById(scheduleId);
+        String returnDate = getValue(request, "returnDate");
+
+        if (!isValidDate(returnDate) && schedule != null) {
+            returnDate = schedule.getAvailableDate().toString();
+        }
 
         if (schedule == null
                 || schedule.getCounsellorId() != counsellor.getCounsellorId()) {
 
             redirectWithMessage(request, response,
-                    "/ScheduleServlet?action=list",
+                    getDetailsOrListDestination(returnDate),
                     "Schedule was not found.");
             return;
         }
 
-        if ("BOOKED".equalsIgnoreCase(schedule.getAvailabilityStatus())) {
+        if ("BOOKED".equalsIgnoreCase(
+                schedule.getAvailabilityStatus())) {
+
             redirectWithMessage(request, response,
-                    "/ScheduleServlet?action=list",
+                    getDetailsOrListDestination(returnDate),
                     "Booked schedules cannot be deleted.");
             return;
         }
 
         if (scheduleDAO.deleteSchedule(scheduleId)) {
             redirectWithMessage(request, response,
-                    "/ScheduleServlet?action=list",
+                    getDetailsOrListDestination(returnDate),
                     "Schedule deleted successfully.");
+
         } else {
             redirectWithMessage(request, response,
-                    "/ScheduleServlet?action=list",
+                    getDetailsOrListDestination(returnDate),
                     "Schedule deletion failed.");
         }
     }
 
-    private Schedule createScheduleObject(HttpServletRequest request,
-            Counsellor counsellor) {
+    private String getDetailsOrListDestination(String dateValue) {
+        if (isValidDate(dateValue)) {
+            return "/ScheduleServlet?action=details&date=" + dateValue;
+        }
+
+        return "/ScheduleServlet?action=list";
+    }
+
+    private Schedule createUpdatedSchedule(HttpServletRequest request,
+            Counsellor counsellor,
+            String existingStatus) {
 
         try {
             String dateValue = getValue(request, "availableDate");
             String timeValue = getValue(request, "availableTime");
-            String status = getValue(request, "availabilityStatus")
-                    .toUpperCase();
 
             if (dateValue.isEmpty() || timeValue.isEmpty()) {
                 return null;
@@ -393,20 +502,47 @@ public class ScheduleServlet extends HttpServlet {
 
             LocalTime localTime = LocalTime.parse(timeValue);
 
-            if (!"AVAILABLE".equals(status)
-                    && !"UNAVAILABLE".equals(status)) {
-                status = "AVAILABLE";
-            }
-
             return new Schedule(
                     counsellor.getCounsellorId(),
                     Date.valueOf(localDate),
                     Time.valueOf(localTime),
-                    status
+                    existingStatus
             );
 
         } catch (Exception e) {
             return null;
+        }
+    }
+
+    private String findInternalOverlap(List<LocalTime> candidateTimes) {
+        for (int i = 0; i < candidateTimes.size(); i++) {
+            for (int j = i + 1; j < candidateTimes.size(); j++) {
+                if (timesOverlap(candidateTimes.get(i), candidateTimes.get(j))) {
+                    return "The selected preset slot and custom slot overlap.";
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private boolean timesOverlap(LocalTime firstStart,
+            LocalTime secondStart) {
+
+        LocalTime firstEnd = firstStart.plusHours(1);
+        LocalTime secondEnd = secondStart.plusHours(1);
+
+        return firstStart.isBefore(secondEnd)
+                && firstEnd.isAfter(secondStart);
+    }
+
+    private boolean isValidDate(String dateValue) {
+        try {
+            LocalDate.parse(dateValue);
+            return true;
+
+        } catch (Exception e) {
+            return false;
         }
     }
 
@@ -430,6 +566,7 @@ public class ScheduleServlet extends HttpServlet {
 
         try {
             return Integer.parseInt(request.getParameter(parameter));
+
         } catch (NumberFormatException e) {
             return 0;
         }
@@ -439,16 +576,21 @@ public class ScheduleServlet extends HttpServlet {
             String parameter) {
 
         String value = request.getParameter(parameter);
+
         return value == null ? "" : value.trim();
     }
 
     private void redirectToLogin(HttpServletRequest request,
             HttpServletResponse response) throws IOException {
 
-        response.sendRedirect(request.getContextPath()
+        response.sendRedirect(
+                request.getContextPath()
                 + "/login.jsp?error=true&msg="
-                + URLEncoder.encode("Please log in as a counsellor first.",
-                        "UTF-8"));
+                + URLEncoder.encode(
+                        "Please log in as a counsellor first.",
+                        "UTF-8"
+                )
+        );
     }
 
     private void redirectWithMessage(HttpServletRequest request,
@@ -458,21 +600,17 @@ public class ScheduleServlet extends HttpServlet {
 
         String separator = destination.contains("?") ? "&" : "?";
 
-        response.sendRedirect(request.getContextPath()
+        response.sendRedirect(
+                request.getContextPath()
                 + destination
                 + separator
                 + "msg="
-                + URLEncoder.encode(message, "UTF-8"));
+                + URLEncoder.encode(message, "UTF-8")
+        );
     }
 
-    /**
-     * Returns a short description of the servlet.
-     *
-     * @return a String containing servlet description
-     */
     @Override
     public String getServletInfo() {
-        return "Short description";
-    }// </editor-fold>
-
+        return "Schedule management servlet";
+    }
 }
