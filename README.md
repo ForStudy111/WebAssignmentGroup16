@@ -2,7 +2,7 @@
 
 A web-based counselling appointment management system developed for **CSE3023 Web-Based Application Development**.
 
-The system allows students to book counselling sessions, counsellors to manage schedules and bookings, and administrators to manage counsellor and student information.
+The system allows students to book counselling sessions, counsellors to manage schedules and bookings and administrators to manage counsellor and student information.
 
 ---
 
